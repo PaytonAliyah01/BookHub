@@ -1,0 +1,15 @@
+@page
+@model BookHub.Pages.Auth.RegisterModel
+<h2>Register</h2>
+
+<form method="post">
+    <input asp-for="Name" placeholder="Name" />
+    <input asp-for="Email" placeholder="Email" />
+    <input asp-for="Password" type="password" placeholder="Password" />
+    <button type="submit">Register</button>
+</form>
+
+@if (Model.ErrorMessage != null)
+{
+    <p style="color:red">@Model.ErrorMessage</p>
+}
