@@ -146,6 +146,7 @@ C:\Users\tiffa\BookHub\obj\Debug\net9.0\BookHub.csproj.CoreCompileInputs.cache
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\BookHub.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\BookHub.RazorAssemblyInfo.cache
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\BookHub.RazorAssemblyInfo.cs
+C:\Users\tiffa\BookHub\obj\Debug\net9.0\BookHub.sourcelink.json
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\rjimswa.dswa.cache.json
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 C:\Users\tiffa\BookHub\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json

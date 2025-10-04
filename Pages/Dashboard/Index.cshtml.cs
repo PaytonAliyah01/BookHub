@@ -1,23 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace BookHub.Pages.Dashboard
 {
+    [Authorize] // Ensures only logged-in users can access
     public class IndexModel : PageModel
     {
         public string UserName { get; set; } = "Guest";
 
         public IActionResult OnGet()
         {
-            // Example: Get user name from session (or claims if using Identity later)
-            var name = HttpContext.Session.GetString("UserName");
-            if (!string.IsNullOrEmpty(name))
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                UserName = name;
+                // Get the user's name from claims
+                UserName = User.FindFirstValue(ClaimTypes.Name) ?? "User";
             }
 
             return Page();
         }
     }
 }
+

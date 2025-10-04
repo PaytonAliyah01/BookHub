@@ -1,20 +1,27 @@
 using BookHub.Data;
 using BookHub.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Add services
 builder.Services.AddRazorPages();
-
-// Register DbContext with SQL Server
 builder.Services.AddDbContext<BookHubDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Register UserService for dependency injection
 builder.Services.AddScoped<UserService>();
+builder.Services.AddHttpContextAccessor();
 
-// Configure session
+// Add authentication and cookie scheme
+builder.Services.AddAuthentication("BookHubCookieAuth")
+    .AddCookie("BookHubCookieAuth", options =>
+    {
+        options.LoginPath = "/Auth/Login";   // Redirect here if not logged in
+        options.LogoutPath = "/Auth/Logout"; // Redirect here on logout
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    });
+
+// Add session if needed (optional now)
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(1);
@@ -22,10 +29,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Build the app
 var app = builder.Build();
 
-// Configure middleware pipeline
+// Middleware pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -33,12 +39,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();   // Serve static files like CSS/JS/images
+app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession();       // Make sure session is before authorization
+// Add authentication middleware before authorization
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseSession();
 
 app.MapRazorPages();
 

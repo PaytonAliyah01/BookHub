@@ -2,6 +2,7 @@ using BookHub.Data;
 using BookHub.Models;
 using BookHub.Helpers;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace BookHub.Services
 {
@@ -31,22 +32,76 @@ namespace BookHub.Services
                 PasswordHash = hash
             };
 
-            _context.Users.Add(user);
+            await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Login
+        // Authenticate user
         public async Task<User?> AuthenticateAsync(string email, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null) return null;
 
             string hash = PasswordHelper.HashPassword(password, user.Salt);
-            if (hash == user.PasswordHash)
-                return user;
+            return hash == user.PasswordHash ? user : null;
+        }
 
-            return null;
+        // Get user by ID
+        public async Task<User?> GetUserByIdAsync(int userId)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        }
+
+        // Update user (name/email/password if provided)
+        public async Task UpdateUserAsync(User user, string? newPassword = null)
+        {
+            if (!string.IsNullOrEmpty(newPassword))
+            {
+                string salt = PasswordHelper.GenerateSalt();
+                string hash = PasswordHelper.HashPassword(newPassword, salt);
+                user.Salt = salt;
+                user.PasswordHash = hash;
+            }
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+
+        // Update only name/email and optionally password
+        public async Task UpdateProfileAsync(int userId, string name, string email, string? newPassword = null)
+        {
+            var user = await GetUserByIdAsync(userId);
+            if (user == null) return;
+
+            user.Name = name;
+            user.Email = email;
+
+            if (!string.IsNullOrEmpty(newPassword))
+            {
+                string salt = PasswordHelper.GenerateSalt();
+                string hash = PasswordHelper.HashPassword(newPassword, salt);
+                user.Salt = salt;
+                user.PasswordHash = hash;
+            }
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+
+        // Optional: update only password
+        public async Task UpdatePasswordAsync(int userId, string newPassword)
+        {
+            var user = await GetUserByIdAsync(userId);
+            if (user == null) return;
+
+            string salt = PasswordHelper.GenerateSalt();
+            string hash = PasswordHelper.HashPassword(newPassword, salt);
+            user.Salt = salt;
+            user.PasswordHash = hash;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
         }
     }
 }
