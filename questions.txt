@@ -1,1 +1,0 @@
-hash passwords with a unique salt.
