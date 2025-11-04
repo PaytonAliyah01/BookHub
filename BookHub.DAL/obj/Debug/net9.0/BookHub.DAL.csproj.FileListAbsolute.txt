@@ -1,0 +1,13 @@
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.AssemblyInfoInputs.cache
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.AssemblyInfo.cs
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.csproj.CoreCompileInputs.cache
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.sourcelink.json
+C:\Users\tiffa\BookHub\BookHub.DAL\bin\Debug\net9.0\BookHub.DAL.deps.json
+C:\Users\tiffa\BookHub\BookHub.DAL\bin\Debug\net9.0\BookHub.DAL.dll
+C:\Users\tiffa\BookHub\BookHub.DAL\bin\Debug\net9.0\BookHub.DAL.pdb
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.csproj.AssemblyReference.cache
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.dll
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\refint\BookHub.DAL.dll
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\BookHub.DAL.pdb
+C:\Users\tiffa\BookHub\BookHub.DAL\obj\Debug\net9.0\ref\BookHub.DAL.dll

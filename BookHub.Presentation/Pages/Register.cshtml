@@ -1,0 +1,28 @@
+@page
+@model BookHub.Presentation.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h2>Register</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label>Name</label>
+        <input type="text" class="form-control" asp-for="Name" required />
+    </div>
+    <div class="mb-3">
+        <label>Email</label>
+        <input type="email" class="form-control" asp-for="Email" required />
+    </div>
+    <div class="mb-3">
+        <label>Password</label>
+        <input type="password" class="form-control" asp-for="Password" required />
+    </div>
+    <button type="submit" class="btn btn-custom">Register</button>
+</form>
+
+@if (Model.ErrorMessage != null)
+{
+    <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
+}

@@ -1,0 +1,36 @@
+@page
+@model BookHub.Presentation.Pages.BooksModel
+@{
+    ViewData["Title"] = "Book List";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (Model.BooksTable.Rows.Count == 0)
+{
+    <p>No books found.</p>
+}
+else
+{
+    <table border="1" cellpadding="5">
+        <thead>
+            <tr>
+                @foreach (System.Data.DataColumn col in Model.BooksTable.Columns)
+                {
+                    <th>@col.ColumnName</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.BooksTable.Rows)
+            {
+                <tr>
+                    @foreach (var item in row.ItemArray)
+                    {
+                        <td>@item</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}

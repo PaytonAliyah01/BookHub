@@ -1,0 +1,111 @@
+/* site.css - global styles for BookHub */
+
+/* Make html and body full height and use flexbox for sticky footer */
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column; /* stack navbar, content, footer vertically */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Main content container should expand */
+.container-fluid.p-0 {
+    flex: 1 0 auto;  /* grow to fill remaining space */
+}
+
+/* Cards icons */
+.card i {
+    font-size: 3rem;
+}
+
+/* Hero section gradient */
+.hero-section {
+    background: linear-gradient(to right, #4e54c8, #8f94fb);
+    color: white;
+    text-align: center;
+    padding: 5rem 1rem;
+}
+
+/* Hero buttons */
+.hero-section .btn-custom {
+    font-size: 1.2rem;
+    padding: 0.75rem 1.5rem;
+}
+
+/* Custom buttons */
+.btn-custom {
+    background-color: #ff7f50;
+    color: white;
+    border: none;
+}
+
+.btn-custom:hover {
+    background-color: #ff6347;
+    color: white;
+}
+
+/* Gradient navbar */
+.navbar-gradient {
+    background: linear-gradient(to right, #4e54c8, #8f94fb);
+}
+
+/* Remove default navbar padding */
+.navbar {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Navbar container full width and align items */
+.navbar .container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    display: flex;
+    align-items: center;
+}
+
+/* Navbar brand/logo */
+.navbar-brand {
+    margin: 0;
+    padding: 0;
+}
+
+.navbar-brand img {
+    height: 50px;   /* Big logo */
+    margin: 0;       /* Flush left */
+    display: block;
+}
+
+/* Responsive logo */
+@media (max-width: 576px) {
+    .navbar-brand img {
+        height: 80px;
+    }
+}
+
+/* Navbar text if using <p> instead of logo */
+.navbar-brand p {
+    font-weight: 900;
+    font-size: 1.8rem;
+    color: white;
+    margin: 0;
+}
+
+/* Footer */
+footer {
+    font-size: 0.9rem;
+    flex-shrink: 0;  /* sticky footer */
+    background-color: #222;
+    color: #fff;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+/* Cards styling for features section */
+.card {
+    border-radius: 0.75rem;
+}
+
+.card-body h4 {
+    font-weight: 700;
+}

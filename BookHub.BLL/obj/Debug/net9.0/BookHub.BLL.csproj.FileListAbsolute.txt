@@ -1,0 +1,16 @@
+C:\Users\tiffa\BookHub\BookHub.BLL\bin\Debug\net9.0\BookHub.BLL.deps.json
+C:\Users\tiffa\BookHub\BookHub.BLL\bin\Debug\net9.0\BookHub.BLL.dll
+C:\Users\tiffa\BookHub\BookHub.BLL\bin\Debug\net9.0\BookHub.BLL.pdb
+C:\Users\tiffa\BookHub\BookHub.BLL\bin\Debug\net9.0\BookHub.DAL.dll
+C:\Users\tiffa\BookHub\BookHub.BLL\bin\Debug\net9.0\BookHub.DAL.pdb
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.csproj.AssemblyReference.cache
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.AssemblyInfoInputs.cache
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.AssemblyInfo.cs
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.csproj.CoreCompileInputs.cache
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.sourcelink.json
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub..5D9EA32F.Up2Date
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.dll
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\refint\BookHub.BLL.dll
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\BookHub.BLL.pdb
+C:\Users\tiffa\BookHub\BookHub.BLL\obj\Debug\net9.0\ref\BookHub.BLL.dll
