@@ -6,10 +6,32 @@
 
 <!-- Hero Section -->
 <section class="hero-section">
-    <div class="container text-center">
-        <h1 class="display-4 fw-bold">Welcome to BookHub 📚</h1>
-        <p class="lead mt-3">Your all-in-one place to explore, learn, and track your reading journey!</p>
-        <a href="/Books" class="btn btn-custom btn-lg mt-4">Browse Books</a>
+    <div class="container">
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <!-- Logged in user: split layout -->
+            <div class="row align-items-center">
+                <div class="col-lg-8 text-center text-lg-start">
+                    <h1 class="display-4 fw-bold">Welcome to BookHub 📚</h1>
+                    <p class="lead mt-3">Your all-in-one place to explore, learn, and track your reading journey!</p>
+                    <a href="/Books" class="btn btn-custom btn-lg mt-4">Browse Books</a>
+                </div>
+                <div class="col-lg-4">
+                    <partial name="_ReadingGoalWidget" model="Model.CurrentGoal" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Not logged in: centered layout -->
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h1 class="display-4 fw-bold">Welcome to BookHub 📚</h1>
+                    <p class="lead mt-3">Your all-in-one place to explore, learn, and track your reading journey!</p>
+                    <a href="/Books" class="btn btn-custom btn-lg mt-4">Browse Books</a>
+                </div>
+            </div>
+        }
     </div>
 </section>
 
@@ -24,19 +46,44 @@
                         <i class="bi bi-book text-primary"></i>
                         <h4 class="mt-3">Discover Books</h4>
                         <p>Explore a growing library of books from different genres and authors.</p>
+                        <a href="/Books" class="btn btn-primary mt-2">Browse Books</a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body">
-                        <i class="bi bi-star text-warning"></i>
-                        <h4 class="mt-3">Track Progress</h4>
-                        <p>Mark your favorite books, see what you’ve read, and earn achievements.</p>
+                        <i class="bi bi-bookshelf text-success"></i>
+                        <h4 class="mt-3">Virtual Bookshelf</h4>
+                        <p>Experience your collection in 3D with an immersive virtual bookshelf view.</p>
+                        <a href="/VirtualBookshelf" class="btn btn-success mt-2">View Bookshelf</a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <i class="bi bi-plus-circle text-warning"></i>
+                        <h4 class="mt-3">Add Books</h4>
+                        <p>Search and add new books to your personal collection directly from the Books page.</p>
+                        <a href="/Books" class="btn btn-warning mt-2">Browse & Add Books</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Features Row -->
+        <div class="row g-4 mt-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <i class="fas fa-target text-info"></i>
+                        <h4 class="mt-3">Track Reading Goals</h4>
+                        <p>Set yearly reading targets and track your progress with detailed analytics.</p>
+                        <a href="/ReadingGoals" class="btn btn-info mt-2">View Goals</a>
+                    </div>
+                </div>
+            </div>
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body">
                         <i class="bi bi-people text-success"></i>

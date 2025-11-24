@@ -1,8 +1,50 @@
 @page
 @model BookHub.Presentation.Pages.LoginModel
-<h2>Login</h2>
-<form method="post">
-    <input asp-for="Email" placeholder="Email" class="form-control mb-2" />
-    <input asp-for="Password" type="password" placeholder="Password" class="form-control mb-2" />
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">@ViewData["Title"]</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @Model.ErrorMessage
+                        </div>
+                    }
+
+                    <form method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" type="email" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <input asp-for="Password" type="password" class="form-control" required />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a asp-page="/ResetPassword" class="text-muted">Forgot your password?</a>
+                        <br>
+                        <span class="text-muted">Don't have an account? </span>
+                        <a asp-page="/Register">Register here</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

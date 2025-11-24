@@ -1,21 +1,211 @@
-﻿using System.Data;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 
 namespace BookHub.DAL
 {
     public class BookDAL
     {
-        private readonly string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=BookHubDb;Trusted_Connection=True;MultipleActiveResultSets=true";
+        private readonly string _connectionString;
 
-        public DataTable GetAllBooks()
+        public BookDAL(string connectionString)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            _connectionString = connectionString;
+        }
+
+        public List<Book> GetAllBooks()
+        {
+            try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM Books", conn);
-                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                adapter.Fill(dt);
-                return dt;
+                var books = new List<Book>();
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT BookId, Title, Author, ISBN, CoverUrl, Genre, Description FROM Books", conn);
+                    conn.Open();
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        books.Add(new Book
+                        {
+                            BookId = (int)reader["BookId"],
+                            Title = reader["Title"]?.ToString() ?? "",
+                            Author = reader["Author"]?.ToString() ?? "",
+                            ISBN = reader["ISBN"]?.ToString() ?? "",
+                            CoverUrl = reader["CoverUrl"]?.ToString() ?? "",
+                            Genre = reader["Genre"]?.ToString() ?? "",
+                            Description = reader["Description"]?.ToString() ?? ""
+                        });
+                    }
+                }
+                return books;
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while retrieving books: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while retrieving books: {ex.Message}", ex);
+            }
+        }
+
+        public Book? GetBookById(int bookId)
+        {
+            try
+            {
+                if (bookId <= 0)
+                    return null;
+
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT BookId, Title, Author, ISBN, CoverUrl, Genre, Description FROM Books WHERE BookId = @BookId", conn);
+                    cmd.Parameters.AddWithValue("@BookId", bookId);
+                    conn.Open();
+                    using var reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return new Book
+                        {
+                            BookId = (int)reader["BookId"],
+                            Title = reader["Title"]?.ToString() ?? "",
+                            Author = reader["Author"]?.ToString() ?? "",
+                            ISBN = reader["ISBN"]?.ToString() ?? "",
+                            CoverUrl = reader["CoverUrl"]?.ToString() ?? "",
+                            Genre = reader["Genre"]?.ToString() ?? "",
+                            Description = reader["Description"]?.ToString() ?? ""
+                        };
+                    }
+                }
+                return null;
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while retrieving book: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while retrieving book: {ex.Message}", ex);
+            }
+        }
+
+        // Add a new book to the database
+        public int AddBook(Book book)
+        {
+            try
+            {
+                if (book == null)
+                    throw new ArgumentNullException(nameof(book));
+
+                if (string.IsNullOrWhiteSpace(book.Title))
+                    throw new ArgumentException("Book title cannot be empty", nameof(book));
+
+                if (string.IsNullOrWhiteSpace(book.Author))
+                    throw new ArgumentException("Book author cannot be empty", nameof(book));
+
+                // Check if book already exists (by ISBN if provided, otherwise by title and author)
+                if (!string.IsNullOrWhiteSpace(book.ISBN) && BookExistsByISBN(book.ISBN))
+                    throw new InvalidOperationException("A book with this ISBN already exists");
+
+                if (string.IsNullOrWhiteSpace(book.ISBN) && BookExistsByTitleAndAuthor(book.Title, book.Author))
+                    throw new InvalidOperationException("A book with this title and author already exists");
+
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand(@"
+                        INSERT INTO Books (Title, Author, ISBN, CoverUrl, Genre) 
+                        VALUES (@Title, @Author, @ISBN, @CoverUrl, @Genre);
+                        SELECT SCOPE_IDENTITY();", conn);
+
+                    cmd.Parameters.AddWithValue("@Title", book.Title);
+                    cmd.Parameters.AddWithValue("@Author", book.Author);
+                    cmd.Parameters.AddWithValue("@ISBN", book.ISBN ?? "");
+                    cmd.Parameters.AddWithValue("@CoverUrl", book.CoverUrl ?? "");
+                    cmd.Parameters.AddWithValue("@Genre", book.Genre ?? "");
+
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    return Convert.ToInt32(result);
+                }
+            }
+            catch (SqlException ex)
+            {
+                if (ex.Number == 2627 || ex.Number == 2601) // Duplicate key violations
+                {
+                    throw new InvalidOperationException("A book with this information already exists.", ex);
+                }
+                throw new InvalidOperationException($"Database error occurred while adding book: {ex.Message}", ex);
+            }
+            catch (ArgumentException)
+            {
+                throw; // Re-throw argument validation exceptions
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while adding book: {ex.Message}", ex);
+            }
+        }
+
+        // Helper method to check if book exists by ISBN
+        private bool BookExistsByISBN(string isbn)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM Books WHERE ISBN = @ISBN AND ISBN != ''", conn);
+                    cmd.Parameters.AddWithValue("@ISBN", isbn);
+                    conn.Open();
+                    int count = (int)cmd.ExecuteScalar();
+                    return count > 0;
+                }
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while checking book existence: {ex.Message}", ex);
+            }
+        }
+
+        // Helper method to check if book exists by title and author
+        private bool BookExistsByTitleAndAuthor(string title, string author)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM Books WHERE LOWER(Title) = LOWER(@Title) AND LOWER(Author) = LOWER(@Author)", conn);
+                    cmd.Parameters.AddWithValue("@Title", title);
+                    cmd.Parameters.AddWithValue("@Author", author);
+                    conn.Open();
+                    int count = (int)cmd.ExecuteScalar();
+                    return count > 0;
+                }
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while checking book existence: {ex.Message}", ex);
+            }
+        }
+
+        // Update book cover URL
+        public bool UpdateBookCover(int bookId, string coverUrl)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand("UPDATE Books SET CoverUrl = @CoverUrl WHERE BookId = @BookId", conn);
+                    cmd.Parameters.AddWithValue("@BookId", bookId);
+                    cmd.Parameters.AddWithValue("@CoverUrl", coverUrl ?? "");
+                    conn.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    return rowsAffected > 0;
+                }
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while updating book cover: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while updating book cover: {ex.Message}", ex);
             }
         }
     }

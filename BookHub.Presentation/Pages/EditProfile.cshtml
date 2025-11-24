@@ -1,0 +1,149 @@
+@page
+@model BookHub.Presentation.Pages.EditProfileModel
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-gear"></i>
+                        @ViewData["Title"]
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @Model.ErrorMessage
+                        </div>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            @Model.SuccessMessage
+                        </div>
+                    }
+
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="mb-3">
+                                    <label class="form-label">Current Profile Picture</label>
+                                    <div class="profile-picture-container">
+                                        @if (Model.CurrentProfileImage == "default.png")
+                                        {
+                                            <img src="~/images/default-profile.png" class="profile-picture" alt="Profile Picture" />
+                                        }
+                                        else
+                                        {
+                                            <img src="~/images/profiles/@Model.CurrentProfileImage" class="profile-picture" alt="Profile Picture" />
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="ProfileImageFile" class="form-label">Change Profile Picture</label>
+                                    <input asp-for="ProfileImageFile" type="file" class="form-control" accept="image/*">
+                                    <small class="form-text text-muted">
+                                        Max file size: 5MB. Supported formats: JPG, PNG, GIF, BMP
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label asp-for="Name" class="form-label">Full Name</label>
+                                    <input asp-for="Name" type="text" class="form-control" required maxlength="100">
+                                    <small class="form-text text-muted">
+                                        Your display name (2-100 characters)
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Bio" class="form-label">Bio</label>
+                                    <textarea asp-for="Bio" class="form-control" rows="4" maxlength="500" placeholder="Tell us about yourself..."></textarea>
+                                    <small class="form-text text-muted">
+                                        <span id="bioCount">@(Model.Bio?.Length ?? 0)</span>/500 characters
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input asp-for="CurrentProfileImage" type="hidden" />
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-page="/Index" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i>
+                                Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-picture-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 1rem;
+    }
+
+    .profile-picture {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+</style>
+
+<script>
+    // Bio character counter
+    document.addEventListener('DOMContentLoaded', function() {
+        const bioTextarea = document.querySelector('textarea[name="Bio"]');
+        const bioCount = document.getElementById('bioCount');
+        
+        if (bioTextarea && bioCount) {
+            bioTextarea.addEventListener('input', function() {
+                bioCount.textContent = this.value.length;
+                
+                // Change color when approaching limit
+                if (this.value.length > 450) {
+                    bioCount.style.color = '#dc3545';
+                } else if (this.value.length > 400) {
+                    bioCount.style.color = '#fd7e14';
+                } else {
+                    bioCount.style.color = '#6c757d';
+                }
+            });
+        }
+    });
+</script>

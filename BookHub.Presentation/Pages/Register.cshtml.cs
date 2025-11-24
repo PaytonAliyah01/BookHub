@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using BookHub.DAL;
+using BookHub.BLL;
 
 namespace BookHub.Presentation.Pages
 {
     public class RegisterModel : PageModel
     {
-        private readonly UserDAL _userDAL;
+        private readonly UserBLL _userBLL;
 
         public RegisterModel(IConfiguration config)
         {
-            _userDAL = new UserDAL(config.GetConnectionString("DefaultConnection")!);
+            _userBLL = new UserBLL(config.GetConnectionString("DefaultConnection")!);
         }
 
         [BindProperty] public string Name { get; set; } = "";
@@ -21,13 +21,20 @@ namespace BookHub.Presentation.Pages
 
         public IActionResult OnPost()
         {
-            if (_userDAL.UserExists(Email))
+            // Presentation layer validation
+            if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Email already registered.";
+                ErrorMessage = "All fields are required.";
                 return Page();
             }
 
-            _userDAL.RegisterUser(Name, Email, Password);
+            // Delegate business logic to BLL
+            if (!_userBLL.RegisterUser(Name, Email, Password))
+            {
+                ErrorMessage = "Email already registered or invalid data.";
+                return Page();
+            }
+
             return RedirectToPage("/Login");
         }
     }

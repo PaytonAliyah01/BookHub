@@ -11,8 +11,14 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 
+    <!-- Font Awesome for star ratings -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" />
+    
+    <!-- Page-specific styles -->
+    @RenderSection("Styles", required: false)
 </head>
 <body>
 
@@ -27,24 +33,66 @@
             </button>
            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                                    <li class="nav-item"><a class="nav-link text-white" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="/Books">Books</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="/Books">
+                        <i class="bi bi-book me-1"></i>Browse Books
+                    </a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="/AllReviews">
+                        <i class="bi bi-chat-square-text me-1"></i>All Reviews
+                    </a></li>
                     <li class="nav-item"><a class="nav-link text-white" href="#">About</a></li>
+                    
                     @if (User.Identity?.IsAuthenticated ?? false)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Hello @User.Identity.Name</a>
-                        </li>
-                        <li class="nav-item">
-                            <form method="post" asp-page="/Logout">
-                                <button type="submit" class="btn btn-link nav-link">Logout</button>
-                            </form>
+                        <!-- Links only visible to authenticated users -->
+                        <li class="nav-item"><a class="nav-link text-white" href="/VirtualBookshelf">
+                            <i class="bi bi-bookshelf me-1"></i>My Bookshelf
+                        </a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="/Friends">
+                            <i class="fas fa-users me-1"></i>Friends
+                        </a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="/BookClubs">
+                            <i class="fas fa-book-reader me-1"></i>Book Clubs
+                        </a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="/ReadingGoals">
+                            <i class="fas fa-target me-1"></i>Reading Goals
+                        </a></li>
+                        
+                        <!-- User dropdown menu -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="/Profile">
+                                    <i class="bi bi-person-circle me-2"></i> View Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="/EditProfile">
+                                    <i class="bi bi-person-gear me-2"></i> Edit Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="/ChangePassword">
+                                    <i class="bi bi-key me-2"></i> Change Password
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" asp-page="/Logout" class="m-0">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
                     }
                     else
                     {
-                        <li class="nav-item"><a class="nav-link" href="/Login">Login</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/Register">Register</a></li>
+                        <!-- Links only visible to non-authenticated users -->
+                        <li class="nav-item"><a class="nav-link text-white" href="/Login">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="/Register">
+                            <i class="bi bi-person-plus me-1"></i>Register
+                        </a></li>
                     }
                 </ul>
             </div>
@@ -63,5 +111,8 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Page-specific scripts -->
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

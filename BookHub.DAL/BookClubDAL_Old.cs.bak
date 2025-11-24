@@ -1,0 +1,628 @@
+using Microsoft.Data.SqlClient;
+using System.Data;
+
+namespace BookHub.DAL
+{
+    public class BookClubDAL
+    {
+        private readonly string _connectionString;
+
+        public BookClubDAL(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        // 1. Create a new book club and add creator as member
+        public int CreateBookClub(BookClub bookClub)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                using var transaction = conn.BeginTransaction();
+                
+                try
+                {
+                    // Insert book club - only include columns that exist
+                    var insertClubCmd = new SqlCommand(@"
+                        INSERT INTO BookClubs (Name, Description, OwnerId)
+                        VALUES (@Name, @Description, @OwnerId);
+                        SELECT SCOPE_IDENTITY();", conn, transaction);
+                    
+                    insertClubCmd.Parameters.AddWithValue("@Name", bookClub.Name);
+                    insertClubCmd.Parameters.AddWithValue("@Description", bookClub.Description ?? "");
+                    insertClubCmd.Parameters.AddWithValue("@OwnerId", bookClub.OwnerId);
+                    
+                    int clubId = Convert.ToInt32(insertClubCmd.ExecuteScalar());
+                    
+                    // Add creator as member
+                    var insertMemberCmd = new SqlCommand(@"
+                        INSERT INTO ClubMemberships (ClubId, UserId)
+                        VALUES (@ClubId, @UserId)", conn, transaction);
+                    
+                    insertMemberCmd.Parameters.AddWithValue("@ClubId", clubId);
+                    insertMemberCmd.Parameters.AddWithValue("@UserId", bookClub.OwnerId);
+                    insertMemberCmd.ExecuteNonQuery();
+                    
+                    transaction.Commit();
+                    return clubId;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error creating book club: {ex.Message}", ex);
+            }
+        }
+
+        // 2. Get all public book clubs with owner and member count
+        public List<BookClub> GetAllBookClubs()
+        {
+            var bookClubs = new List<BookClub>();
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate, 
+                           bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                           bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                           u.Name AS OwnerName, u.Email AS OwnerEmail, u.Bio AS OwnerBio, u.ProfileImage AS OwnerProfileImage,
+                           COUNT(cm.ClubMembershipId) AS MemberCount
+                    FROM BookClubs bc
+                    INNER JOIN Users u ON bc.OwnerId = u.UserId
+                    LEFT JOIN ClubMemberships cm ON bc.ClubId = cm.ClubId AND cm.IsActive = 1
+                    WHERE bc.IsPrivate = 0 AND bc.IsActive = 1
+                    GROUP BY bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate,
+                             bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                             bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                             u.Name, u.Email, u.Bio, u.ProfileImage
+                    ORDER BY bc.CreatedDate DESC", conn);
+                
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var bookClub = new BookClub
+                    {
+                        ClubId = reader.GetInt32("ClubId"),
+                        Name = reader.GetString("Name"),
+                        Description = reader.GetString("Description"),
+                        OwnerId = reader.GetInt32("OwnerId"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        CurrentBookId = reader.IsDBNull("CurrentBookId") ? null : reader.GetInt32("CurrentBookId"),
+                        CurrentBookStartDate = reader.IsDBNull("CurrentBookStartDate") ? null : reader.GetDateTime("CurrentBookStartDate"),
+                        CurrentBookEndDate = reader.IsDBNull("CurrentBookEndDate") ? null : reader.GetDateTime("CurrentBookEndDate"),
+                        IsPrivate = reader.GetBoolean("IsPrivate"),
+                        MaxMembers = reader.GetInt32("MaxMembers"),
+                        MeetingSchedule = reader.IsDBNull("MeetingSchedule") ? null : reader.GetString("MeetingSchedule"),
+                        Genre = reader.IsDBNull("Genre") ? null : reader.GetString("Genre"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        Owner = new User
+                        {
+                            UserId = reader.GetInt32("OwnerId"),
+                            Name = reader.GetString("OwnerName"),
+                            Email = reader.GetString("OwnerEmail"),
+                            Bio = reader.GetString("OwnerBio"),
+                            ProfileImage = reader.GetString("OwnerProfileImage")
+                        }
+                    };
+                    bookClubs.Add(bookClub);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting all book clubs: {ex.Message}", ex);
+            }
+            return bookClubs;
+        }
+
+        // 3. Get specific book club by ClubId
+        public BookClub? GetBookClubById(int clubId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate, 
+                           bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                           bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                           u.Name AS OwnerName, u.Email AS OwnerEmail, u.Bio AS OwnerBio, u.ProfileImage AS OwnerProfileImage,
+                           b.Title AS CurrentBookTitle, b.Author AS CurrentBookAuthor, b.CoverUrl AS CurrentBookCover
+                    FROM BookClubs bc
+                    INNER JOIN Users u ON bc.OwnerId = u.UserId
+                    LEFT JOIN Books b ON bc.CurrentBookId = b.BookId
+                    WHERE bc.ClubId = @ClubId AND bc.IsActive = 1", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    return new BookClub
+                    {
+                        ClubId = reader.GetInt32("ClubId"),
+                        Name = reader.GetString("Name"),
+                        Description = reader.GetString("Description"),
+                        OwnerId = reader.GetInt32("OwnerId"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        CurrentBookId = reader.IsDBNull("CurrentBookId") ? null : reader.GetInt32("CurrentBookId"),
+                        CurrentBookStartDate = reader.IsDBNull("CurrentBookStartDate") ? null : reader.GetDateTime("CurrentBookStartDate"),
+                        CurrentBookEndDate = reader.IsDBNull("CurrentBookEndDate") ? null : reader.GetDateTime("CurrentBookEndDate"),
+                        IsPrivate = reader.GetBoolean("IsPrivate"),
+                        MaxMembers = reader.GetInt32("MaxMembers"),
+                        MeetingSchedule = reader.IsDBNull("MeetingSchedule") ? null : reader.GetString("MeetingSchedule"),
+                        Genre = reader.IsDBNull("Genre") ? null : reader.GetString("Genre"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        Owner = new User
+                        {
+                            UserId = reader.GetInt32("OwnerId"),
+                            Name = reader.GetString("OwnerName"),
+                            Email = reader.GetString("OwnerEmail"),
+                            Bio = reader.GetString("OwnerBio"),
+                            ProfileImage = reader.GetString("OwnerProfileImage")
+                        },
+                        CurrentBook = reader.IsDBNull("CurrentBookId") ? null : new Book
+                        {
+                            BookId = reader.GetInt32("CurrentBookId"),
+                            Title = reader.GetString("CurrentBookTitle"),
+                            Author = reader.GetString("CurrentBookAuthor"),
+                            CoverUrl = reader.GetString("CurrentBookCover")
+                        }
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting book club by ID: {ex.Message}", ex);
+            }
+            return null;
+        }
+
+        // 4. Get clubs user is member of
+        public List<BookClub> GetUserBookClubs(int userId)
+        {
+            var bookClubs = new List<BookClub>();
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate, 
+                           bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                           bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                           u.Name AS OwnerName, u.Email AS OwnerEmail, u.Bio AS OwnerBio, u.ProfileImage AS OwnerProfileImage,
+                           cm.Role AS UserRole
+                    FROM BookClubs bc
+                    INNER JOIN Users u ON bc.OwnerId = u.UserId
+                    INNER JOIN ClubMemberships cm ON bc.ClubId = cm.ClubId
+                    WHERE cm.UserId = @UserId AND cm.IsActive = 1 AND bc.IsActive = 1
+                    ORDER BY bc.CreatedDate DESC", conn);
+                
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var bookClub = new BookClub
+                    {
+                        ClubId = reader.GetInt32("ClubId"),
+                        Name = reader.GetString("Name"),
+                        Description = reader.GetString("Description"),
+                        OwnerId = reader.GetInt32("OwnerId"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        CurrentBookId = reader.IsDBNull("CurrentBookId") ? null : reader.GetInt32("CurrentBookId"),
+                        CurrentBookStartDate = reader.IsDBNull("CurrentBookStartDate") ? null : reader.GetDateTime("CurrentBookStartDate"),
+                        CurrentBookEndDate = reader.IsDBNull("CurrentBookEndDate") ? null : reader.GetDateTime("CurrentBookEndDate"),
+                        IsPrivate = reader.GetBoolean("IsPrivate"),
+                        MaxMembers = reader.GetInt32("MaxMembers"),
+                        MeetingSchedule = reader.IsDBNull("MeetingSchedule") ? null : reader.GetString("MeetingSchedule"),
+                        Genre = reader.IsDBNull("Genre") ? null : reader.GetString("Genre"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        Owner = new User
+                        {
+                            UserId = reader.GetInt32("OwnerId"),
+                            Name = reader.GetString("OwnerName"),
+                            Email = reader.GetString("OwnerEmail"),
+                            Bio = reader.GetString("OwnerBio"),
+                            ProfileImage = reader.GetString("OwnerProfileImage")
+                        }
+                    };
+                    bookClubs.Add(bookClub);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting user book clubs: {ex.Message}", ex);
+            }
+            return bookClubs;
+        }
+
+        // 5. Add user to ClubMemberships
+        public bool JoinBookClub(int clubId, int userId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                
+                // Check if user is already a member
+                if (IsUserMember(clubId, userId))
+                {
+                    return false;
+                }
+                
+                // Check if club is at capacity
+                if (!CanJoinBookClub(clubId, userId))
+                {
+                    return false;
+                }
+                
+                var cmd = new SqlCommand(@"
+                    INSERT INTO ClubMemberships (ClubId, UserId, JoinedDate, Role, IsActive)
+                    VALUES (@ClubId, @UserId, @JoinedDate, 'Member', 1)", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@JoinedDate", DateTime.Now);
+                
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error joining book club: {ex.Message}", ex);
+            }
+        }
+
+        // 6. Update IsActive to false in ClubMemberships
+        public bool LeaveBookClub(int clubId, int userId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                
+                var cmd = new SqlCommand(@"
+                    UPDATE ClubMemberships 
+                    SET IsActive = 0 
+                    WHERE ClubId = @ClubId AND UserId = @UserId", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error leaving book club: {ex.Message}", ex);
+            }
+        }
+
+        // 7. Check if user is member
+        public bool IsUserMember(int clubId, int userId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT COUNT(1) 
+                    FROM ClubMemberships 
+                    WHERE ClubId = @ClubId AND UserId = @UserId AND IsActive = 1", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error checking membership: {ex.Message}", ex);
+            }
+        }
+
+        // 8. Get all members of a club
+        public List<BookClubMember> GetBookClubMembers(int clubId)
+        {
+            var members = new List<BookClubMember>();
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT cm.ClubMembershipId, cm.ClubId, cm.UserId, cm.JoinedDate, cm.Role, cm.IsActive,
+                           u.Name, u.Email, u.Bio, u.ProfileImage
+                    FROM ClubMemberships cm
+                    INNER JOIN Users u ON cm.UserId = u.UserId
+                    WHERE cm.ClubId = @ClubId AND cm.IsActive = 1
+                    ORDER BY cm.JoinedDate", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var member = new BookClubMember
+                    {
+                        ClubMembershipId = reader.GetInt32("ClubMembershipId"),
+                        ClubId = reader.GetInt32("ClubId"),
+                        UserId = reader.GetInt32("UserId"),
+                        JoinedDate = reader.GetDateTime("JoinedDate"),
+                        Role = reader.GetString("Role"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        User = new User
+                        {
+                            UserId = reader.GetInt32("UserId"),
+                            Name = reader.GetString("Name"),
+                            Email = reader.GetString("Email"),
+                            Bio = reader.GetString("Bio"),
+                            ProfileImage = reader.GetString("ProfileImage")
+                        }
+                    };
+                    members.Add(member);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting book club members: {ex.Message}", ex);
+            }
+            return members;
+        }
+
+        // 9. Update club details
+        public bool UpdateBookClub(BookClub bookClub)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    UPDATE BookClubs 
+                    SET Name = @Name, 
+                        Description = @Description, 
+                        IsPrivate = @IsPrivate, 
+                        MaxMembers = @MaxMembers, 
+                        MeetingSchedule = @MeetingSchedule, 
+                        Genre = @Genre
+                    WHERE ClubId = @ClubId", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", bookClub.ClubId);
+                cmd.Parameters.AddWithValue("@Name", bookClub.Name);
+                cmd.Parameters.AddWithValue("@Description", bookClub.Description ?? "");
+                cmd.Parameters.AddWithValue("@IsPrivate", bookClub.IsPrivate);
+                cmd.Parameters.AddWithValue("@MaxMembers", bookClub.MaxMembers);
+                cmd.Parameters.AddWithValue("@MeetingSchedule", bookClub.MeetingSchedule ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Genre", bookClub.Genre ?? (object)DBNull.Value);
+                
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating book club: {ex.Message}", ex);
+            }
+        }
+
+        // 10. Soft delete club
+        public bool DeleteBookClub(int clubId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                using var transaction = conn.BeginTransaction();
+                
+                try
+                {
+                    // Soft delete the club
+                    var deleteClubCmd = new SqlCommand(@"
+                        UPDATE BookClubs 
+                        SET IsActive = 0 
+                        WHERE ClubId = @ClubId", conn, transaction);
+                    deleteClubCmd.Parameters.AddWithValue("@ClubId", clubId);
+                    
+                    // Soft delete all memberships
+                    var deleteMembershipsCmd = new SqlCommand(@"
+                        UPDATE ClubMemberships 
+                        SET IsActive = 0 
+                        WHERE ClubId = @ClubId", conn, transaction);
+                    deleteMembershipsCmd.Parameters.AddWithValue("@ClubId", clubId);
+                    
+                    deleteClubCmd.ExecuteNonQuery();
+                    deleteMembershipsCmd.ExecuteNonQuery();
+                    
+                    transaction.Commit();
+                    return true;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error deleting book club: {ex.Message}", ex);
+            }
+        }
+
+        // 11. Search by name/description
+        public List<BookClub> SearchBookClubs(string searchTerm)
+        {
+            var bookClubs = new List<BookClub>();
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate, 
+                           bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                           bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                           u.Name AS OwnerName, u.Email AS OwnerEmail, u.Bio AS OwnerBio, u.ProfileImage AS OwnerProfileImage,
+                           COUNT(cm.ClubMembershipId) AS MemberCount
+                    FROM BookClubs bc
+                    INNER JOIN Users u ON bc.OwnerId = u.UserId
+                    LEFT JOIN ClubMemberships cm ON bc.ClubId = cm.ClubId AND cm.IsActive = 1
+                    WHERE bc.IsActive = 1 
+                      AND (bc.Name LIKE @SearchTerm OR bc.Description LIKE @SearchTerm OR bc.Genre LIKE @SearchTerm)
+                    GROUP BY bc.ClubId, bc.Name, bc.Description, bc.OwnerId, bc.CreatedDate,
+                             bc.CurrentBookId, bc.CurrentBookStartDate, bc.CurrentBookEndDate,
+                             bc.IsPrivate, bc.MaxMembers, bc.MeetingSchedule, bc.Genre, bc.IsActive,
+                             u.Name, u.Email, u.Bio, u.ProfileImage
+                    ORDER BY bc.CreatedDate DESC", conn);
+                
+                cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+                
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var bookClub = new BookClub
+                    {
+                        ClubId = reader.GetInt32("ClubId"),
+                        Name = reader.GetString("Name"),
+                        Description = reader.GetString("Description"),
+                        OwnerId = reader.GetInt32("OwnerId"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        CurrentBookId = reader.IsDBNull("CurrentBookId") ? null : reader.GetInt32("CurrentBookId"),
+                        CurrentBookStartDate = reader.IsDBNull("CurrentBookStartDate") ? null : reader.GetDateTime("CurrentBookStartDate"),
+                        CurrentBookEndDate = reader.IsDBNull("CurrentBookEndDate") ? null : reader.GetDateTime("CurrentBookEndDate"),
+                        IsPrivate = reader.GetBoolean("IsPrivate"),
+                        MaxMembers = reader.GetInt32("MaxMembers"),
+                        MeetingSchedule = reader.IsDBNull("MeetingSchedule") ? null : reader.GetString("MeetingSchedule"),
+                        Genre = reader.IsDBNull("Genre") ? null : reader.GetString("Genre"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        Owner = new User
+                        {
+                            UserId = reader.GetInt32("OwnerId"),
+                            Name = reader.GetString("OwnerName"),
+                            Email = reader.GetString("OwnerEmail"),
+                            Bio = reader.GetString("OwnerBio"),
+                            ProfileImage = reader.GetString("OwnerProfileImage")
+                        }
+                    };
+                    bookClubs.Add(bookClub);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error searching book clubs: {ex.Message}", ex);
+            }
+            return bookClubs;
+        }
+
+        // 12. Get user's role in club
+        public string? GetMembershipStatus(int clubId, int userId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT Role 
+                    FROM ClubMemberships 
+                    WHERE ClubId = @ClubId AND UserId = @UserId AND IsActive = 1", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                
+                return cmd.ExecuteScalar()?.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting membership status: {ex.Message}", ex);
+            }
+        }
+
+        // 13. Check if user can join (not full, not already member)
+        public bool CanJoinBookClub(int clubId, int userId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                
+                // Check if already a member
+                if (IsUserMember(clubId, userId))
+                {
+                    return false;
+                }
+                
+                // Check if club is full
+                var cmd = new SqlCommand(@"
+                    SELECT bc.MaxMembers, COUNT(cm.ClubMembershipId) AS CurrentMembers
+                    FROM BookClubs bc
+                    LEFT JOIN ClubMemberships cm ON bc.ClubId = cm.ClubId AND cm.IsActive = 1
+                    WHERE bc.ClubId = @ClubId AND bc.IsActive = 1
+                    GROUP BY bc.MaxMembers", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    int maxMembers = reader.GetInt32("MaxMembers");
+                    int currentMembers = reader.GetInt32("CurrentMembers");
+                    return currentMembers < maxMembers;
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error checking if can join book club: {ex.Message}", ex);
+            }
+        }
+
+        // 14. Get current member count
+        public int GetBookClubMemberCount(int clubId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    SELECT COUNT(ClubMembershipId) 
+                    FROM ClubMemberships 
+                    WHERE ClubId = @ClubId AND IsActive = 1", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting member count: {ex.Message}", ex);
+            }
+        }
+
+        // 15. Update club's current book
+        public bool UpdateCurrentBook(int clubId, int? bookId, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+                var cmd = new SqlCommand(@"
+                    UPDATE BookClubs 
+                    SET CurrentBookId = @CurrentBookId, 
+                        CurrentBookStartDate = @CurrentBookStartDate, 
+                        CurrentBookEndDate = @CurrentBookEndDate
+                    WHERE ClubId = @ClubId", conn);
+                
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+                cmd.Parameters.AddWithValue("@CurrentBookId", bookId ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@CurrentBookStartDate", startDate ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@CurrentBookEndDate", endDate ?? (object)DBNull.Value);
+                
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating current book: {ex.Message}", ex);
+            }
+        }
+    }
+}

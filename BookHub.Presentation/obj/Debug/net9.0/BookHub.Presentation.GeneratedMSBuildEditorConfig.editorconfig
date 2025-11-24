@@ -20,12 +20,40 @@ build_property._RazorSourceGeneratorDebug =
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/AllReviews.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWxsUmV2aWV3cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/BookClubs.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQm9va0NsdWJzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/BookReviews.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQm9va1Jldmlld3MuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Books.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQm9va3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/ChangePassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hhbmdlUGFzc3dvcmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/EditProfile.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRWRpdFByb2ZpbGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXJyb3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Forum.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRm9ydW0uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Friends.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRnJpZW5kcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Index.cshtml]
@@ -44,12 +72,32 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJpdmFjeS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Profile.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZmlsZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/ReadingGoals.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVhZGluZ0dvYWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVnaXN0ZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/ResetPassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVzZXRQYXNzd29yZC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Shared/_ReadingGoalWidget.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2hhcmVkXF9SZWFkaW5nR29hbFdpZGdldC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/VirtualBookshelf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVmlydHVhbEJvb2tzaGVsZi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/tiffa/BookHub/BookHub.Presentation/Pages/_ViewImports.cshtml]

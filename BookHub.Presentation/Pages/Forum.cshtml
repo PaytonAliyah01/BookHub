@@ -1,0 +1,391 @@
+@page
+@model BookHub.Presentation.Pages.ForumModel
+@{
+    ViewData["Title"] = Model.CurrentPost != null ? Model.CurrentPost.Title : $"{Model.BookClub?.Name} - Discussion Forum";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/BookClubs">Book Clubs</a></li>
+                    <li class="breadcrumb-item"><a href="/BookClubs">@Model.BookClub?.Name</a></li>
+                    <li class="breadcrumb-item active">@(Model.CurrentPost != null ? "Discussion" : "Forum")</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">
+                        @if (Model.CurrentPost != null)
+                        {
+                            <i class="fas fa-comment-dots me-2 text-primary"></i>@Model.CurrentPost.Title
+                        }
+                        else
+                        {
+                            <i class="fas fa-comments me-2 text-primary"></i>@($"{Model.BookClub?.Name} Discussion Forum")
+                        }
+                    </h1>
+                    <p class="text-muted mb-0">@Model.BookClub?.Description</p>
+                </div>
+                
+                @if (Model.CanUserPost && Model.CurrentPost == null)
+                {
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPostModal">
+                        <i class="fas fa-plus me-1"></i>New Post
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (Model.CurrentPost != null)
+    {
+        <!-- Single Post View -->
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Main Post -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle bg-primary text-white me-2">
+                                @(Model.CurrentPost.User?.Name?.Substring(0, 1).ToUpper())
+                            </div>
+                            <div>
+                                <h6 class="mb-0">@Model.CurrentPost.User?.Name</h6>
+                                <small class="text-muted">@Model.CurrentPost.CreatedDate.ToString("MMM dd, yyyy 'at' h:mm tt")</small>
+                            </div>
+                        </div>
+                        
+                        @if (Model.CurrentPost.IsSticky)
+                        {
+                            <span class="badge bg-warning">
+                                <i class="fas fa-thumbtack me-1"></i>Pinned
+                            </span>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div class="post-content">
+                            @Html.Raw(Model.CurrentPost.Content)
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-reply me-1"></i>@Model.CurrentPost.ReplyCount replies
+                            </small>
+                            
+                            @if (Model.CanUserPost)
+                            {
+                                <button class="btn btn-outline-primary btn-sm" onclick="focusReplyEditor()">
+                                    <i class="fas fa-reply me-1"></i>Reply
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Replies -->
+                <div class="replies-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-comments me-2"></i>Replies (@Model.CurrentPost.ReplyCount)
+                    </h5>
+                    
+                    @foreach (var reply in Model.CurrentPost.Replies)
+                    {
+                        <div class="card mb-3 reply-card">
+                            <div class="card-header py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-secondary text-white me-2 small-avatar">
+                                        @(reply.User?.Name?.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 small">@reply.User?.Name</h6>
+                                        <small class="text-muted">@reply.CreatedDate.ToString("MMM dd, yyyy 'at' h:mm tt")</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="reply-content">
+                                    @Html.Raw(reply.Content)
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (!Model.CurrentPost.Replies.Any())
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                            <p>No replies yet. Be the first to respond!</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Reply Form -->
+                @if (Model.CanUserPost)
+                {
+                    <div class="card mt-4" id="replyForm">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-reply me-1"></i>Post a Reply</h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="replyFormElement" enctype="multipart/form-data">
+                                <input type="hidden" name="PostId" value="@Model.PostId" />
+                                @Html.AntiForgeryToken()
+                                
+                                <div class="mb-3">
+                                    <textarea name="NewReply.Content" class="form-control" rows="4" 
+                                              placeholder="Write your reply here... You can use emojis like :smile: :heart: :thumbsup:" 
+                                              id="replyContent" required></textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Tip: Use emoji shortcodes like :smile: :heart: :fire:</small>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-1"></i>Post Reply
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        You must be a member of this book club to participate in discussions.
+                        <a href="/BookClubs" class="alert-link">Join the club</a> to start posting.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Posts List View -->
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                @if (Model.Posts.Any())
+                {
+                    @foreach (var post in Model.Posts)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div class="d-flex align-items-start">
+                                            @if (post.IsSticky)
+                                            {
+                                                <i class="fas fa-thumbtack text-warning me-2 mt-1" title="Pinned Post"></i>
+                                            }
+                                            <div class="flex-grow-1">
+                                                <h5 class="card-title mb-1">
+                                                    <a href="/Forum?clubId=@Model.ClubId&postId=@post.PostId" class="text-decoration-none">@post.Title</a>
+                                                </h5>
+                                                <div class="post-preview text-muted mb-2">
+                                                    @{
+                                                        var preview = post.Content.Length > 150 ? post.Content.Substring(0, 150) + "..." : post.Content;
+                                                        preview = System.Text.RegularExpressions.Regex.Replace(preview, "<.*?>", ""); // Strip HTML
+                                                    }
+                                                    @preview
+                                                </div>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-user me-1"></i>@post.User?.Name
+                                                    <i class="fas fa-clock ms-2 me-1"></i>@post.CreatedDate.ToString("MMM dd, yyyy")
+                                                    @if (post.ReplyCount > 0)
+                                                    {
+                                                        <i class="fas fa-reply ms-2 me-1"></i>@($"{post.ReplyCount} replies")
+                                                    }
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <a href="/Forum?clubId=@Model.ClubId&postId=@post.PostId" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-arrow-right me-1"></i>View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div>
+                            @if (Model.Page > 1)
+                            {
+                                <a href="/Forum?clubId=@Model.ClubId&page=@(Model.Page - 1)" class="btn btn-outline-secondary">
+                                    <i class="fas fa-chevron-left me-1"></i>Previous
+                                </a>
+                            }
+                        </div>
+                        <span class="text-muted">Page @Model.Page</span>
+                        <div>
+                            @if (Model.HasMorePosts)
+                            {
+                                <a href="/Forum?clubId=@Model.ClubId&page=@(Model.Page + 1)" class="btn btn-outline-secondary">
+                                    Next<i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No discussions yet</h4>
+                        <p class="text-muted">Start the conversation by creating the first post in this book club!</p>
+                        @if (Model.CanUserPost)
+                        {
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPostModal">
+                                <i class="fas fa-plus me-1"></i>Create First Post
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- New Post Modal -->
+@if (Model.CanUserPost && Model.CurrentPost == null)
+{
+    <div class="modal fade" id="newPostModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-1"></i>Create New Discussion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="newPostForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="ClubId" value="@Model.ClubId" />
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-3">
+                            <label for="postTitle" class="form-label">Discussion Title *</label>
+                            <input type="text" name="NewPost.Title" class="form-control" id="postTitle" 
+                                   placeholder="Enter a descriptive title for your discussion" maxlength="200" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="postContent" class="form-label">Content *</label>
+                            <textarea name="NewPost.Content" class="form-control" id="postContent" rows="6" 
+                                      placeholder="Share your thoughts about this book club..." required></textarea>
+                        </div>
+                        
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tip: Use emoji shortcodes like :smile: :heart: :fire: :book:
+                        </small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>Create Discussion
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Focus reply editor
+        function focusReplyEditor() {
+            document.getElementById('replyContent').focus();
+            document.getElementById('replyForm').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Handle new post form submission
+        document.getElementById('newPostForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/Forum?handler=CreatePost', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.location.href = `/Forum?clubId=@Model.ClubId&postId=${result.postId}`;
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error creating post. Please try again.');
+            }
+        });
+        
+        // Handle reply form submission
+        document.getElementById('replyFormElement')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/Forum?handler=CreateReply', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error posting reply. Please try again.');
+            }
+        });
+    </script>
+}
+
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .small-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+    
+    .reply-card {
+        border-left: 3px solid #007bff;
+        margin-left: 2rem;
+    }
+    
+    .post-content, .reply-content {
+        line-height: 1.6;
+        word-wrap: break-word;
+    }
+    
+    .post-preview {
+        max-height: 3em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+</style>
