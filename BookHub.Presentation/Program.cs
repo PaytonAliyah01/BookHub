@@ -3,46 +3,55 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.Cookies;
-
+using BookHub.BLL;
+using BookHub.DAL;
+using BookHub.DAL.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
-
-// 1️⃣ Add Razor Pages
 builder.Services.AddRazorPages();
-
-// 2️⃣ Add cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Login";        // redirect to login page if not authenticated
-        options.AccessDeniedPath = "/Login"; // redirect if unauthorized
-        options.ExpireTimeSpan = TimeSpan.FromDays(7); // cookie lifetime
+        options.LoginPath = "/Auth/Login";
+        options.AccessDeniedPath = "/Auth/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
     });
-
-// 3️⃣ Optional: session support (if you plan to use HttpContext.Session)
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromHours(1);
+    options.IdleTimeout = TimeSpan.FromHours(24);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
-
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+builder.Services.AddScoped<IBookDAL>(provider => new BookDAL(connectionString));
+builder.Services.AddScoped<IUserDAL>(provider => new UserDAL(connectionString));
+builder.Services.AddScoped<IUserBookshelfDAL>(provider => new UserBookshelfDAL(connectionString));
+builder.Services.AddScoped<IAdminDAL>(provider => new AdminDAL(connectionString));
+builder.Services.AddScoped<IBookClubDAL>(provider => new BookClubDAL_Simple(connectionString));
+builder.Services.AddScoped<IBookReviewDAL>(provider => new BookReviewDAL(connectionString));
+builder.Services.AddScoped<IBookBLL, BookBLL>();
+builder.Services.AddScoped<IReadingGoalBLL>(provider => new ReadingGoalBLL(connectionString));
+builder.Services.AddScoped<IBookReviewBLL>(provider => new BookReviewBLL(connectionString));
+builder.Services.AddScoped<IUserBLL>(provider => new UserBLL(connectionString));
+builder.Services.AddScoped<IUserBookshelfBLL>(provider => new UserBookshelfBLL(connectionString));
+builder.Services.AddScoped<IBookClubBLL>(provider => new BookClubBLL(connectionString));
+builder.Services.AddScoped<IForumBLL>(provider => new ForumBLL(connectionString));
+builder.Services.AddScoped<IFriendBLL>(provider => new FriendBLL(connectionString));
+builder.Services.AddScoped<IAnalyticsBLL, AnalyticsBLL>();
+builder.Services.AddScoped<AdminBLL>();
 var app = builder.Build();
-
-// 4️⃣ Configure middleware pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
-app.UseSession();           // optional, before authentication
-app.UseAuthentication();    // must come before UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseSession();
 app.MapRazorPages();
-
 app.Run();

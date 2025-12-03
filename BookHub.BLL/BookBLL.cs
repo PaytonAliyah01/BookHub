@@ -1,159 +1,115 @@
-﻿using BookHub.DAL;
-
+using BookHub.DAL;
+using BookHub.DAL.Interfaces;
 namespace BookHub.BLL
 {
-    public class BookBLL
+    public class BookBLL : IBookBLL
     {
-        private readonly BookDAL _bookDAL;
-        private readonly CoverDownloadService _coverService;
-
-        public BookBLL(string connectionString)
+        private readonly IBookDAL _bookDAL;
+        public BookBLL(IBookDAL bookDAL)
         {
-            _bookDAL = new BookDAL(connectionString);
-            _coverService = new CoverDownloadService();
+            _bookDAL = bookDAL;
         }
-
-        // Business logic: Get all books with any business rules applied
-        public List<BookHub.DAL.Book> GetAllBooks()
+        public List<BookDto> GetAllBooks()
         {
             try
             {
-                return _bookDAL.GetAllBooks();
+                var books = _bookDAL.GetAllBooks();
+                return books.Select(MapToDto).ToList();
             }
             catch (InvalidOperationException ex)
             {
-                // Handle DAL exceptions and convert to business exceptions
                 throw new ApplicationException("Unable to retrieve books. Please try again later.", ex);
             }
         }
-
-        // Business logic: Get a specific book with validation
-        public BookHub.DAL.Book? GetBookById(int bookId)
+        public BookDto? GetBookById(int bookId)
         {
             try
             {
                 if (bookId <= 0)
                     return null;
-
+                var book = _bookDAL.GetBookById(bookId);
+                return book != null ? MapToDto(book) : null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to retrieve book. Please try again later.", ex);
+            }
+        }
+        internal BookHub.DAL.Book? GetBookByIdInternal(int bookId)
+        {
+            try
+            {
+                if (bookId <= 0)
+                    return null;
                 return _bookDAL.GetBookById(bookId);
             }
             catch (InvalidOperationException ex)
             {
-                // Handle DAL exceptions
                 throw new ApplicationException("Unable to retrieve book. Please try again later.", ex);
             }
         }
-
-        // Business logic: Add a new book with validation
-        public int AddBook(BookHub.DAL.Book book)
+        public int AddBook(BookDto bookDto)
         {
             try
             {
-                if (book == null)
+                if (bookDto == null)
                     throw new ArgumentException("Book cannot be null");
-
-                // Business logic validations
-                if (string.IsNullOrWhiteSpace(book.Title?.Trim()))
+                if (string.IsNullOrWhiteSpace(bookDto.Title?.Trim()))
                     throw new ArgumentException("Book title is required");
-
-                if (string.IsNullOrWhiteSpace(book.Author?.Trim()))
+                if (string.IsNullOrWhiteSpace(bookDto.Author?.Trim()))
                     throw new ArgumentException("Book author is required");
-
-                if (book.Title.Length > 255)
+                if (bookDto.Title.Length > 255)
                     throw new ArgumentException("Book title cannot exceed 255 characters");
-
-                if (book.Author.Length > 255)
+                if (bookDto.Author.Length > 255)
                     throw new ArgumentException("Book author cannot exceed 255 characters");
-
-                // Clean up the data
-                book.Title = book.Title.Trim();
-                book.Author = book.Author.Trim();
-                book.ISBN = book.ISBN?.Trim() ?? "";
-                book.Genre = book.Genre?.Trim() ?? "";
-                book.CoverUrl = book.CoverUrl?.Trim() ?? "";
-
-                return _bookDAL.AddBook(book);
+                var dalBook = MapFromDto(bookDto);
+                dalBook.Title = dalBook.Title.Trim();
+                dalBook.Author = dalBook.Author.Trim();
+                dalBook.ISBN = dalBook.ISBN?.Trim() ?? "";
+                dalBook.Genre = dalBook.Genre?.Trim() ?? "";
+                dalBook.CoverUrl = dalBook.CoverUrl?.Trim() ?? "";
+                return _bookDAL.AddBook(dalBook);
             }
             catch (ArgumentException)
             {
-                throw; // Re-throw validation exceptions
+                throw;
             }
             catch (InvalidOperationException ex)
             {
-                // Handle DAL exceptions
                 throw new ApplicationException("Unable to add book. Please try again later.", ex);
             }
         }
-
-        // Download covers for all books that don't have local covers
-        public async Task<string> DownloadMissingCoversAsync()
+        private BookDto MapToDto(BookHub.DAL.Book book)
         {
-            try
+            return new BookDto
             {
-                var books = _bookDAL.GetAllBooks();
-                var downloadTasks = new List<Task<string?>>();
-                var results = new List<string>();
-
-                Console.WriteLine($"🔍 Checking covers for {books.Count} books...");
-
-                foreach (var book in books)
-                {
-                    // Check if book already has a local cover
-                    var localCoverPath = Path.Combine("wwwroot", "images", "covers", $"book_{book.BookId}.jpg");
-                    
-                    if (!File.Exists(localCoverPath))
-                    {
-                        var task = _coverService.DownloadAndSaveCoverAsync(book.BookId, book.Title, book.Author, book.ISBN);
-                        downloadTasks.Add(task);
-                    }
-                    else
-                    {
-                        results.Add($"✅ {book.Title} - Cover already exists");
-                    }
-                }
-
-                Console.WriteLine($"📥 Downloading {downloadTasks.Count} missing covers...");
-                
-                // Process downloads in batches to avoid overwhelming servers
-                var batchSize = 5;
-                for (int i = 0; i < downloadTasks.Count; i += batchSize)
-                {
-                    var batch = downloadTasks.Skip(i).Take(batchSize);
-                    var batchResults = await Task.WhenAll(batch);
-                    
-                    foreach (var result in batchResults)
-                    {
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            results.Add($"✅ Downloaded: {result}");
-                        }
-                    }
-                    
-                    // Small delay between batches
-                    await Task.Delay(1000);
-                }
-
-                var summary = $"📊 Cover Download Summary:\n" +
-                             $"   Total Books: {books.Count}\n" +
-                             $"   Downloads Attempted: {downloadTasks.Count}\n" +
-                             $"   Successful Downloads: {results.Count(r => r.Contains("Downloaded"))}\n" +
-                             $"   Already Had Covers: {results.Count(r => r.Contains("already exists"))}";
-
-                Console.WriteLine(summary);
-                return summary;
-            }
-            catch (Exception ex)
-            {
-                var errorMsg = $"❌ Error downloading covers: {ex.Message}";
-                Console.WriteLine(errorMsg);
-                return errorMsg;
-            }
+                BookId = book.BookId,
+                Title = book.Title,
+                Author = book.Author,
+                ISBN = book.ISBN,
+                CoverUrl = book.CoverUrl,
+                CoverImagePath = book.CoverUrl,
+                Genre = book.Genre,
+                Description = book.Description,
+                CreatedDate = book.CreatedDate,
+                PublicationDate = book.CreatedDate,
+                GenreId = 0,
+                TotalPages = 0
+            };
         }
-
-        // Future business logic methods can be added here:
-        // - SearchBooks(string searchTerm)
-        // - GetBooksByCategory(string category)
-        // - GetFeaturedBooks()
-        // - etc.
+        private BookHub.DAL.Book MapFromDto(BookDto bookDto)
+        {
+            return new BookHub.DAL.Book
+            {
+                BookId = bookDto.BookId,
+                Title = bookDto.Title,
+                Author = bookDto.Author,
+                ISBN = bookDto.ISBN,
+                CoverUrl = bookDto.CoverUrl ?? bookDto.CoverImagePath ?? "",
+                Genre = bookDto.Genre,
+                Description = bookDto.Description,
+                CreatedDate = bookDto.CreatedDate != default ? bookDto.CreatedDate : DateTime.Now
+            };
+        }
     }
 }

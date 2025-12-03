@@ -1,0 +1,860 @@
+@page "/Books"
+@model BookHub.Presentation.Pages.BooksModel
+@{
+    ViewData["Title"] = "Browse Books";
+}
+<form style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-5 fw-bold mb-0">
+                    <i class="bi bi-book me-2"></i>
+                    Browse Books
+                </h1>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/Books/AllReviews" class="btn btn-outline-primary">
+                        <i class="bi bi-chat-square-text me-1"></i>
+                        Reviews
+                    </a>
+                    @if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        <a href="/Reading/ReadingGoals" class="btn btn-outline-success">
+                            <i class="bi bi-bullseye me-1"></i>
+                            Goals
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (User.Identity?.IsAuthenticated ?? false && Model.CurrentGoal != null)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">@DateTime.Now.Year Reading Goal</h6>
+                                <p class="card-text text-muted mb-0">@(Model.CurrentGoal?.BooksRead ?? 0) of @(Model.CurrentGoal?.TargetBooks ?? 0) books</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary fs-6">@(Model.CurrentGoal?.ProgressPercentage ?? 0)%</span>
+                                <div class="progress mt-2" style="width: 200px; height: 8px;">
+                                    <div class="progress-bar bg-primary" style="width: @(Math.Min(100, Model.CurrentGoal?.ProgressPercentage ?? 0))%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" class="form-control" id="bookSearch" placeholder="Search books...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Author</label>
+                            <select class="form-select" id="authorFilter">
+                                <option value="">All Authors</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Genre</label>
+                            <select class="form-select" id="genreFilter">
+                                <option value="">All Genres</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy">
+                                <option value="title">Sort by Title</option>
+                                <option value="author">Sort by Author</option>
+                                <option value="genre">Sort by Genre</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                    <i class="bi @(Model.IsSuccess ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                    @Model.Message
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!User.Identity?.IsAuthenticated ?? true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Browse our book collection!</strong> 
+                    <a href="/Auth/Login" class="alert-link">Sign in</a> or 
+                    <a href="/Auth/Register" class="alert-link">create an account</a> 
+                    to add books to your personal bookshelf.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!Model.Books.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-book display-1 text-muted"></i>
+                    <h3 class="mt-3 text-muted">No books found</h3>
+                    <p class="text-muted">Check back later for new book additions!</p>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4" id="booksContainer">
+            @foreach (var book in Model.Books)
+            {
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 book-item" 
+                     data-title="@book.Title.ToLower()" 
+                     data-author="@book.Author.ToLower()" 
+                     data-genre="@book.Genre.ToLower()">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div style="height: 250px; position: relative; overflow: hidden;">
+                            @{
+                                var coverFileName = $"book_{book.BookId}";
+                                var possibleExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                                var localCoverPath = "";
+                                var hasLocalCover = false;
+                                foreach (var ext in possibleExtensions)
+                                {
+                                    var testPath = $"wwwroot/images/{coverFileName}{ext}";
+                                    if (System.IO.File.Exists(testPath))
+                                    {
+                                        localCoverPath = $"/images/{coverFileName}{ext}";
+                                        hasLocalCover = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            @if (hasLocalCover)
+                            {
+                                <img src="@localCoverPath" 
+                                     alt="@book.Title cover" 
+                                     class="card-img-top h-100"
+                                     style="object-fit: cover;">
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center h-100 bg-primary text-white">
+                                    <div class="text-center p-3">
+                                        <h6 class="mb-1">@book.Title</h6>
+                                        <small>@book.Author</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">@book.Title</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">by @book.Author</h6>
+                            @if (!string.IsNullOrEmpty(book.Genre))
+                            {
+                                <span class="badge bg-secondary mb-2">@book.Genre</span>
+                            }
+                            @{
+                                var hasRating = Model.BookRatings.ContainsKey(book.BookId);
+                                var ratingData = hasRating ? Model.BookRatings[book.BookId] : (0.0, 0);
+                            }
+                            @if (hasRating && ratingData.Item2 > 0)
+                            {
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            @if (i <= Math.Round(ratingData.Item1))
+                                            {
+                                                <i class="fas fa-star text-warning"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="far fa-star text-muted"></i>
+                                            }
+                                        }
+                                        <small class="text-muted ms-2">
+                                            @ratingData.Item1.ToString("F1") (@ratingData.Item2 review@(ratingData.Item2 != 1 ? "s" : ""))
+                                        </small>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mb-2">
+                                    <small class="text-muted">No reviews yet</small>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(book.Description))
+                            {
+                                <p class="card-text text-muted small">
+                                    @(book.Description.Length > 80 ? book.Description.Substring(0, 80).Trim() + "..." : book.Description)
+                                </p>
+                            }
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success btn-sm add-to-bookshelf-btn" 
+                                        data-book-id="@book.BookId"
+                                        data-book-title="@book.Title"
+                                        data-book-author="@book.Author">
+                                    <i class="bi bi-bookmark-plus me-1"></i>
+                                    Add to Shelf
+                                </button>
+                                <div class="d-flex gap-2">
+                                    @if (User.Identity?.IsAuthenticated ?? false)
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm flex-fill mark-as-read-btn"
+                                                data-book-id="@book.BookId"
+                                                data-book-title="@book.Title">
+                                            <i class="fas fa-check me-1"></i>
+                                            Mark Read
+                                        </button>
+                                    }
+                                    <button class="btn btn-outline-secondary btn-sm flex-fill view-details-btn"
+                                            data-book-id="@book.BookId"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#bookDetailsModal">
+                                        <i class="bi bi-eye me-1"></i>
+                                        Details
+                                    </button>
+                                </div>
+                                <a href="/Books/Details/@book.BookId" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    View
+                                </a>
+                                <a href="/Books/BookReviews?bookId=@book.BookId" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-star me-1"></i>
+                                    Reviews
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+<div class="modal fade" id="bookDetailsModal" tabindex="-1" aria-labelledby="bookDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookDetailsModalLabel">Book Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bookDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setupBookActions();
+            setupFilters();
+        });
+        function setupBookActions() {
+            document.querySelectorAll('.add-to-bookshelf-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = this.dataset.bookId;
+                    const bookTitle = this.dataset.bookTitle;
+                    addToBookshelf(bookId, bookTitle, this);
+                });
+            });
+            document.querySelectorAll('.mark-as-read-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = this.dataset.bookId;
+                    const bookTitle = this.dataset.bookTitle;
+                    markAsRead(bookId, bookTitle, this);
+                });
+            });
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = this.dataset.bookId;
+                    loadBookDetails(bookId);
+                });
+            });
+        }
+        function setupFilters() {
+            const searchInput = document.getElementById('bookSearch');
+            const authorFilter = document.getElementById('authorFilter');
+            const genreFilter = document.getElementById('genreFilter');
+            const sortBy = document.getElementById('sortBy');
+            populateFilterOptions();
+            searchInput.addEventListener('input', filterBooks);
+            authorFilter.addEventListener('change', filterBooks);
+            genreFilter.addEventListener('change', filterBooks);
+            sortBy.addEventListener('change', sortBooks);
+        }
+        function populateFilterOptions() {
+            const books = document.querySelectorAll('.book-item');
+            const authors = new Set();
+            const genres = new Set();
+            books.forEach(book => {
+                authors.add(book.dataset.author);
+                if (book.dataset.genre) {
+                    genres.add(book.dataset.genre);
+                }
+            });
+            const authorFilter = document.getElementById('authorFilter');
+            authors.forEach(author => {
+                const option = document.createElement('option');
+                option.value = author;
+                option.textContent = author.charAt(0).toUpperCase() + author.slice(1);
+                authorFilter.appendChild(option);
+            });
+            const genreFilter = document.getElementById('genreFilter');
+            genres.forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre;
+                option.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
+                genreFilter.appendChild(option);
+            });
+        }
+        function filterBooks() {
+            const searchTerm = document.getElementById('bookSearch').value.toLowerCase();
+            const selectedAuthor = document.getElementById('authorFilter').value;
+            const selectedGenre = document.getElementById('genreFilter').value;
+            const books = document.querySelectorAll('.book-item');
+            books.forEach(book => {
+                const title = book.dataset.title;
+                const author = book.dataset.author;
+                const genre = book.dataset.genre;
+                const matchesSearch = title.includes(searchTerm) || author.includes(searchTerm);
+                const matchesAuthor = !selectedAuthor || author === selectedAuthor;
+                const matchesGenre = !selectedGenre || genre === selectedGenre;
+                if (matchesSearch && matchesAuthor && matchesGenre) {
+                    book.style.display = '';
+                } else {
+                    book.style.display = 'none';
+                }
+            });
+        }
+        function sortBooks() {
+            const sortBy = document.getElementById('sortBy').value;
+            const container = document.getElementById('booksContainer');
+            const books = Array.from(container.children);
+            books.sort((a, b) => {
+                const aValue = a.dataset[sortBy];
+                const bValue = b.dataset[sortBy];
+                return aValue.localeCompare(bValue);
+            });
+            books.forEach(book => container.appendChild(book));
+        }
+        function addToBookshelf(bookId, title, buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Adding...';
+            buttonElement.disabled = true;
+            const formData = new FormData();
+            formData.append('bookId', bookId);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
+            fetch('/Books?handler=AddToBookshelf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    buttonElement.innerHTML = '<i class="bi bi-check-circle me-1"></i>Added!';
+                    buttonElement.classList.remove('btn-success');
+                    buttonElement.classList.add('btn-outline-success');
+                    showToast('Success!', data.message);
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalHTML;
+                        buttonElement.classList.remove('btn-outline-success');
+                        buttonElement.classList.add('btn-success');
+                        buttonElement.disabled = false;
+                    }, 3000);
+                } else {
+                    if (data.requireLogin) {
+                        if (confirm('You need to sign in to add books to your bookshelf. Go to login page?')) {
+                            window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                        }
+                    } else {
+                        showToast('Error', data.message);
+                    }
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('Error', 'Unable to connect to server. Please try again.');
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.disabled = false;
+            });
+        }
+        function markAsRead(bookId, title, buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            buttonElement.disabled = true;
+            const formData = new FormData();
+            formData.append('bookId', bookId);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
+            fetch('/Books?handler=MarkAsRead', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    buttonElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>Read!';
+                    buttonElement.classList.remove('btn-outline-primary');
+                    buttonElement.classList.add('btn-success');
+                    buttonElement.disabled = true;
+                    showToast('Success!', data.message);
+                } else {
+                    showToast('Error', data.message || 'Failed to mark book as read');
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('Error', 'Error marking book as read');
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.disabled = false;
+            });
+        }
+        function loadBookDetails(bookId) {
+            const modalContent = document.getElementById('bookDetailsContent');
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading book details...</p>
+                </div>
+            `;
+            fetch(`/Books?handler=BookDetails&bookId=${bookId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.book) {
+                        const book = data.book;
+                        modalContent.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    ${book.coverUrl ? 
+                                        `<img src="${book.coverUrl}" alt="${book.title}" class="img-fluid rounded" style="max-height: 300px;">` : 
+                                        `<div class="d-flex flex-column align-items-center justify-content-center bg-light rounded" style="height: 300px;">
+                                            <i class="bi bi-book display-4 text-muted"></i>
+                                            <p class="mt-2 text-muted">No Cover Available</p>
+                                        </div>`
+                                    }
+                                </div>
+                                <div class="col-md-8">
+                                    <h4 class="text-primary">${book.title}</h4>
+                                    <h6 class="text-muted">by ${book.author}</h6>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <p><strong>Genre:</strong> ${book.genre || 'Not specified'}</p>
+                                        ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
+                                    </div>
+                                    ${book.description ? `
+                                        <div class="mb-3">
+                                            <h6><strong>Description:</strong></h6>
+                                            <p class="text-justify">${book.description}</p>
+                                        </div>
+                                    ` : ''}
+                                    <div class="mt-4">
+                                        <button class="btn btn-success me-2 add-to-bookshelf-btn" 
+                                                data-book-id="${book.bookId}"
+                                                data-book-title="${book.title}">
+                                            <i class="bi bi-bookmark-plus me-1"></i>
+                                            Add to My Shelf
+                                        </button>
+                                        <a href="/Books/BookReviews?bookId=${book.bookId}" class="btn btn-outline-primary">
+                                            <i class="bi bi-star me-1"></i>
+                                            View Reviews
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const modalAddBtn = modalContent.querySelector('.add-to-bookshelf-btn');
+                        if (modalAddBtn) {
+                            modalAddBtn.addEventListener('click', function() {
+                                addToBookshelf(this.dataset.bookId, this.dataset.bookTitle, this);
+                            });
+                        }
+                    } else {
+                        modalContent.innerHTML = `
+                            <div class="text-center text-danger">
+                                <i class="bi bi-exclamation-triangle display-4"></i>
+                                <h5 class="mt-3">Error Loading Book Details</h5>
+                                <p>${data.message || 'Unable to load book information'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    modalContent.innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle display-4"></i>
+                            <h5 class="mt-3">Connection Error</h5>
+                            <p>Unable to connect to server. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+        function showToast(title, message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+            alert.style.zIndex = '9999';
+            alert.style.marginTop = '20px';
+            alert.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+}
+        function setupBookActions() {
+            document.querySelectorAll('.add-to-bookshelf-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = this.dataset.bookId;
+                    const bookTitle = this.dataset.bookTitle;
+                    const bookAuthor = this.dataset.bookAuthor;
+                    addToBookshelf(bookId, bookTitle, bookAuthor, this);
+                });
+            });
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = this.dataset.bookId;
+                    loadBookDetails(bookId);
+                });
+            });
+        }
+        function addToBookshelf(bookId, title, author, buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Adding...';
+            buttonElement.disabled = true;
+            const formData = new FormData();
+            formData.append('bookId', bookId);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
+            fetch('/Books?handler=AddToBookshelf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    buttonElement.innerHTML = '<i class="bi bi-check-circle me-1"></i>Added!';
+                    buttonElement.classList.remove('btn-success');
+                    buttonElement.classList.add('btn-outline-success');
+                    showToast('Success!', data.message, 'success');
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalHTML;
+                        buttonElement.classList.remove('btn-outline-success');
+                        buttonElement.classList.add('btn-success');
+                        buttonElement.disabled = false;
+                    }, 3000);
+                } else {
+                    if (data.requireLogin) {
+                        buttonElement.innerHTML = '<i class="bi bi-person-plus me-1"></i>Login Required';
+                        buttonElement.classList.remove('btn-success');
+                        buttonElement.classList.add('btn-outline-warning');
+                        setTimeout(() => {
+                            const shouldLogin = confirm('You need to sign in to add books to your bookshelf.\n\nWould you like to go to the login page now?');
+                            if (shouldLogin) {
+                                window.location.href = '/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                            } else {
+                                buttonElement.innerHTML = originalHTML;
+                                buttonElement.classList.remove('btn-outline-warning');
+                                buttonElement.classList.add('btn-success');
+                                buttonElement.disabled = false;
+                            }
+                        }, 100);
+                        return;
+                    }
+                    buttonElement.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error';
+                    buttonElement.classList.remove('btn-success');
+                    buttonElement.classList.add('btn-outline-danger');
+                    showToast('Error', data.message, 'error');
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalHTML;
+                        buttonElement.classList.remove('btn-outline-danger');
+                        buttonElement.classList.add('btn-success');
+                        buttonElement.disabled = false;
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                buttonElement.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error';
+                buttonElement.classList.remove('btn-success');
+                buttonElement.classList.add('btn-outline-danger');
+                showToast('Error', 'Unable to connect to server. Please try again.', 'error');
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.classList.remove('btn-outline-danger');
+                    buttonElement.classList.add('btn-success');
+                    buttonElement.disabled = false;
+                }, 3000);
+            });
+        }
+        function loadBookDetails(bookId) {
+            const modalContent = document.getElementById('bookDetailsContent');
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading book details...</p>
+                </div>
+            `;
+            fetch(`/Books?handler=BookDetails&bookId=${bookId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.book) {
+                        const book = data.book;
+                        modalContent.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    ${book.coverUrl ? 
+                                        `<img src="${book.coverUrl}" alt="${book.title}" class="img-fluid rounded" style="max-height: 300px;">` : 
+                                        `<div class="placeholder-cover-large d-flex flex-column align-items-center justify-content-center" style="height: 300px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px;">
+                                            <i class="bi bi-book display-4 text-muted"></i>
+                                            <p class="mt-2 text-muted">No Cover Available</p>
+                                        </div>`
+                                    }
+                                </div>
+                                <div class="col-md-8">
+                                    <h4 class="text-primary">${book.title}</h4>
+                                    <h6 class="text-muted">by ${book.author}</h6>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <p><strong>Genre:</strong> ${book.genre || 'Not specified'}</p>
+                                        ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
+                                    </div>
+                                    ${book.description ? `
+                                        <div class="mb-3">
+                                            <h6><strong>Description:</strong></h6>
+                                            <p class="text-justify" style="line-height: 1.6;">${book.description}</p>
+                                        </div>
+                                    ` : ''}
+                                    <div class="mt-4">
+                                        <button class="btn btn-success me-2 add-to-bookshelf-btn" 
+                                                data-book-id="${book.bookId}"
+                                                data-book-title="${book.title}"
+                                                data-book-author="${book.author}">
+                                            <i class="bi bi-bookmark-plus me-1"></i>
+                                            Add to My Shelf
+                                        </button>
+                                        <button class="btn btn-outline-primary" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author + ' book')}&tbm=shop', '_blank')">
+                                            <i class="bi bi-search me-1"></i>
+                                            Find Online
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const modalAddBtn = modalContent.querySelector('.add-to-bookshelf-btn');
+                        if (modalAddBtn) {
+                            modalAddBtn.addEventListener('click', function() {
+                                const bookId = this.dataset.bookId;
+                                const bookTitle = this.dataset.bookTitle;
+                                const bookAuthor = this.dataset.bookAuthor;
+                                addToBookshelf(bookId, bookTitle, bookAuthor, this);
+                            });
+                        }
+                    } else {
+                        modalContent.innerHTML = `
+                            <div class="text-center text-danger">
+                                <i class="bi bi-exclamation-triangle display-4"></i>
+                                <h5 class="mt-3">Error Loading Book Details</h5>
+                                <p>${data.message || 'Unable to load book information'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading book details:', error);
+                    modalContent.innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle display-4"></i>
+                            <h5 class="mt-3">Connection Error</h5>
+                            <p>Unable to connect to server. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+        function showAlert(type, message, duration = 5000) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x`;
+            alert.style.zIndex = '9999';
+            alert.style.marginTop = '20px';
+            alert.innerHTML = `
+                <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, duration);
+        }
+        function showToast(title, message, type = 'success') {
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+            const toastId = 'toast-' + Date.now();
+            const toastHTML = `
+                <div id="${toastId}" class="toast book-toast" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+        function markAsRead(bookId, title, buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            buttonElement.disabled = true;
+            const formData = new FormData();
+            formData.append('bookId', bookId);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append('__RequestVerificationToken', token.value);
+            }
+            fetch('/Books?handler=MarkAsRead', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.progressUpdated) {
+                        showToast(data.message, 'success');
+                        updateProgressWidget(data.booksRead, data.targetBooks);
+                    } else {
+                        showToast(data.message, 'success');
+                    }
+                    buttonElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>Read!';
+                    buttonElement.classList.remove('btn-primary');
+                    buttonElement.classList.add('btn-success');
+                    buttonElement.disabled = true;
+                } else {
+                    showToast(data.message || 'Failed to mark book as read', 'error');
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error marking book as read:', error);
+                showToast('Error marking book as read', 'error');
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.disabled = false;
+            });
+        }
+        function updateProgressWidget(booksRead, targetBooks) {
+            const progressBadge = document.querySelector('.reading-progress-mini .badge');
+            const progressBar = document.querySelector('.reading-progress-mini .progress-bar');
+            if (progressBadge && progressBar) {
+                progressBadge.textContent = `${booksRead}/${targetBooks}`;
+                const percentage = targetBooks > 0 ? (booksRead / targetBooks) * 100 : 0;
+                progressBar.style.width = `${Math.min(100, percentage)}%`;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.mark-as-read-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const bookId = this.dataset.bookId;
+                    const title = this.dataset.bookTitle;
+                    markAsRead(bookId, title, this);
+                });
+            });
+        });
+    </script>
+}
+<style>
+    .star-rating-small .fa-star {
+        font-size: 0.9em;
+        margin-right: 1px;
+    }
+    .book-rating {
+        padding: 8px 0;
+        border-top: 1px solid #f0f0f0;
+        margin-top: 8px !important;
+    }
+    .star-rating-small {
+        display: inline-flex;
+        align-items: center;
+    }
+    .book-rating small {
+        font-size: 0.8em;
+        color: #666;
+    }
+    .book-rating .text-warning {
+        color: #ffc107 !important;
+    }
+    .book-rating .text-muted {
+        color: #6c757d !important;
+    }
+</style>

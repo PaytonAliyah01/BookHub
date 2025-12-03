@@ -1597,11 +1597,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\tiffa\\BookHub\\BookHub.BLL\\BookHub.BLL.csproj",
+      "projectUniqueName": "c:\\Users\\tiffa\\BookHub\\BookHub.BLL\\BookHub.BLL.csproj",
       "projectName": "BookHub.BLL",
-      "projectPath": "C:\\Users\\tiffa\\BookHub\\BookHub.BLL\\BookHub.BLL.csproj",
+      "projectPath": "c:\\Users\\tiffa\\BookHub\\BookHub.BLL\\BookHub.BLL.csproj",
       "packagesPath": "C:\\Users\\tiffa\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\tiffa\\BookHub\\BookHub.BLL\\obj\\",
+      "outputPath": "c:\\Users\\tiffa\\BookHub\\BookHub.BLL\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

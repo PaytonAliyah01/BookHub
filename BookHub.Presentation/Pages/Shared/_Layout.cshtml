@@ -1,118 +1,319 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BookHub</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
-
-    <!-- Font Awesome for star ratings -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="~/css/site.css" />
-    
-    <!-- Page-specific styles -->
+    <meta name="description" content="BookHub - Your personal digital library for tracking, reviewing, and discovering books" />
+    <meta name="theme-color" content="#2C5F2D" />
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - BookHub" : "BookHub - Your Digital Library")</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" 
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
+          crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" 
+          integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" 
+          crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
+          crossorigin="anonymous" 
+          referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/images/favicon.png" />
     @RenderSection("Styles", required: false)
 </head>
 <body>
-
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-gradient">
-        <div class="container-fluid px-0">
-            <a class="navbar-brand" href="/">
-                <img src="~/images/bookHub.png" alt="BookHub Logo" />
+    <a href="#main-content" class="skip-nav">Skip to main content</a>
+    <nav class="navbar navbar-expand-lg" role="navigation" aria-label="Main navigation">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="/" aria-label="BookHub - Go to homepage">
+                <i class="fas fa-book-open" aria-hidden="true"></i>
+                BookHub
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" 
+                    aria-expanded="false" 
+                    aria-label="Toggle navigation menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
-           <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link text-white" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="/Books">
-                        <i class="bi bi-book me-1"></i>Browse Books
-                    </a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="/AllReviews">
-                        <i class="bi bi-chat-square-text me-1"></i>All Reviews
-                    </a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="#">About</a></li>
-                    
-                    @if (User.Identity?.IsAuthenticated ?? false)
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" role="menubar">
+                    <li class="nav-item" role="none">
+                        <a class="nav-link" href="/" role="menuitem">
+                            <i class="bi bi-house-fill" aria-hidden="true"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <button class="btn btn-outline-secondary nav-link border-0" 
+                                id="themeToggle" 
+                                type="button" 
+                                aria-label="Toggle dark/light mode"
+                                title="Toggle theme">
+                            <i class="bi bi-sun-fill" id="themeIcon" aria-hidden="true"></i>
+                        </button>
+                    </li>
+                    @{
+                        var isAdmin = User.Identity?.IsAuthenticated == true && User.HasClaim(c => c.Type == "AdminId");
+                    }
+                    @if (isAdmin)
                     {
-                        <!-- Links only visible to authenticated users -->
-                        <li class="nav-item"><a class="nav-link text-white" href="/VirtualBookshelf">
-                            <i class="bi bi-bookshelf me-1"></i>My Bookshelf
-                        </a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="/Friends">
-                            <i class="fas fa-users me-1"></i>Friends
-                        </a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="/BookClubs">
-                            <i class="fas fa-book-reader me-1"></i>Book Clubs
-                        </a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="/ReadingGoals">
-                            <i class="fas fa-target me-1"></i>Reading Goals
-                        </a></li>
-                        
-                        <!-- User dropdown menu -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Admin/Dashboard" role="menuitem">
+                                <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Admin/Users" role="menuitem">
+                                <i class="bi bi-people" aria-hidden="true"></i>
+                                <span>Manage Users</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Admin/Books" role="menuitem">
+                                <i class="bi bi-book" aria-hidden="true"></i>
+                                <span>Manage Books</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Admin/BookClubs" role="menuitem">
+                                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                                <span>Manage Book Clubs</span>
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown" role="none">
+                            <a class="nav-link dropdown-toggle" 
+                               href="#" 
+                               id="adminDropdown" 
+                               role="button" 
+                               data-bs-toggle="dropdown" 
+                               aria-expanded="false"
+                               aria-haspopup="true">
+                                <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                                <span>Admin</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="/Auth/Logout">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    }
+                    else if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Books" role="menuitem">
+                                <i class="bi bi-book" aria-hidden="true"></i>
+                                <span>Browse Books</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Books/AllReviews" role="menuitem">
+                                <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                                <span>All Reviews</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Books/VirtualBookshelf" role="menuitem">
+                                <i class="bi bi-bookshelf" aria-hidden="true"></i>
+                                <span>My Bookshelf</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Community/Friends" role="menuitem">
+                                <i class="bi bi-people" aria-hidden="true"></i>
+                                <span>Friends</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Community/BookClubs" role="menuitem">
+                                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                                <span>Book Clubs</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Reading/Goals" role="menuitem">
+                                <i class="bi bi-target" aria-hidden="true"></i>
+                                <span>Reading Goals</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Reading/Analytics" role="menuitem">
+                                <i class="bi bi-graph-up" aria-hidden="true"></i>
+                                <span>Analytics</span>
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown" role="none">
+                            <a class="nav-link dropdown-toggle" 
+                               href="#" 
+                               id="userDropdown" 
+                               role="button" 
+                               data-bs-toggle="dropdown" 
+                               aria-expanded="false"
+                               aria-haspopup="true">
+                                <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                <span>@(User.Identity?.Name ?? "User")</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="/Profile">
-                                    <i class="bi bi-person-circle me-2"></i> View Profile
+                                    <i class="bi bi-person" aria-hidden="true"></i>
+                                    View Profile
                                 </a></li>
-                                <li><a class="dropdown-item" href="/EditProfile">
-                                    <i class="bi bi-person-gear me-2"></i> Edit Profile
+                                <li><a class="dropdown-item" href="/Profile/Edit">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    Edit Profile
                                 </a></li>
-                                <li><a class="dropdown-item" href="/ChangePassword">
-                                    <i class="bi bi-key me-2"></i> Change Password
+                                <li><a class="dropdown-item" href="/Profile/ChangePassword">
+                                    <i class="bi bi-key" aria-hidden="true"></i>
+                                    Change Password
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="post" asp-page="/Logout" class="m-0">
-                                        <button type="submit" class="dropdown-item">
-                                            <i class="bi bi-box-arrow-right me-2"></i> Logout
-                                        </button>
-                                    </form>
-                                </li>
+                                <li><a class="dropdown-item" href="/Auth/Logout">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    Logout
+                                </a></li>
                             </ul>
                         </li>
                     }
                     else
                     {
-                        <!-- Links only visible to non-authenticated users -->
-                        <li class="nav-item"><a class="nav-link text-white" href="/Login">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                        </a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="/Register">
-                            <i class="bi bi-person-plus me-1"></i>Register
-                        </a></li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Auth/Login" role="menuitem">
+                                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                                <span>Login</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/Auth/Register" role="menuitem">
+                                <i class="bi bi-person-plus" aria-hidden="true"></i>
+                                <span>Register</span>
+                            </a>
+                        </li>
                     }
                 </ul>
             </div>
         </div>
     </nav>
-
-    <!-- Main content -->
-    <div class="container-fluid p-0">
+    <main id="main-content" class="flex-fill" role="main" tabindex="-1">
         @RenderBody()
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-5">
-        <p class="mb-0">&copy; @DateTime.Now.Year BookHub | Built with ❤️ using ASP.NET Razor Pages</p>
+    </main>
+    <footer class="footer mt-auto" role="contentinfo">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        <strong>BookHub</strong> &copy; @DateTime.Now.Year - Your Digital Library
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">
+                        <a href="/Privacy" class="text-decoration-none me-3">Privacy Policy</a>
+                        <a href="#" class="text-decoration-none me-3">Terms of Service</a>
+                        <a href="#" class="text-decoration-none">Contact Us</a>
+                    </p>
+                </div>
+            </div>
+        </div>
     </footer>
-
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Page-specific scripts -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1200;">
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
+            crossorigin="anonymous"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('shown.bs.modal', function() {
+                    const focusableElement = modal.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (focusableElement) {
+                        focusableElement.focus();
+                    }
+                });
+            });
+            const skipLink = document.querySelector('.skip-nav');
+            if (skipLink) {
+                skipLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector('#main-content');
+                    if (target) {
+                        target.focus();
+                        target.scrollIntoView();
+                    }
+                });
+            }
+            const pageTitle = document.title;
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.className = 'sr-only';
+            announcement.textContent = `Page loaded: ${pageTitle}`;
+            document.body.appendChild(announcement);
+            setTimeout(() => {
+                if (announcement.parentNode) {
+                    announcement.parentNode.removeChild(announcement);
+                }
+            }, 1000);
+        });
+        function initThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const htmlElement = document.documentElement;
+            const savedTheme = localStorage.getItem('bookhub-theme') || 'light';
+            setTheme(savedTheme);
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = htmlElement.getAttribute('data-bs-theme') || 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+                localStorage.setItem('bookhub-theme', newTheme);
+            });
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-bs-theme', theme);
+                if (theme === 'dark') {
+                    themeIcon.className = 'bi bi-moon-fill';
+                    themeToggle.setAttribute('aria-label', 'Switch to light mode');
+                    themeToggle.setAttribute('title', 'Switch to light mode');
+                } else {
+                    themeIcon.className = 'bi bi-sun-fill';
+                    themeToggle.setAttribute('aria-label', 'Switch to dark mode');
+                    themeToggle.setAttribute('title', 'Switch to dark mode');
+                }
+                const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                if (themeColorMeta) {
+                    themeColorMeta.setAttribute('content', theme === 'dark' ? '#212529' : '#2C5F2D');
+                }
+            }
+        }
+        initThemeToggle();
+        window.showToast = function(type, title, message, duration = 5000) {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center border-0 bg-${type}" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body text-white">
+                            <strong>${title}:</strong> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { delay: duration });
+            toast.show();
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        };
+    </script>
 </body>
 </html>

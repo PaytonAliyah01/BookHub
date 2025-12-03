@@ -1,17 +1,13 @@
 using Microsoft.Data.SqlClient;
-
 namespace BookHub.DAL
 {
     public class FriendDAL
     {
         private readonly string _connectionString;
-
         public FriendDAL(string connectionString)
         {
             _connectionString = connectionString;
         }
-
-        // Search for users by name or email
         public List<User> SearchUsers(string searchTerm, int currentUserId)
         {
             var users = new List<User>();
@@ -19,17 +15,14 @@ namespace BookHub.DAL
             {
                 if (string.IsNullOrWhiteSpace(searchTerm))
                     return users;
-
                 using var conn = new SqlConnection(_connectionString);
                 var cmd = new SqlCommand(@"
                     SELECT UserId, Name, Email, Bio, ProfileImage 
                     FROM Users 
                     WHERE (Name LIKE @SearchTerm OR Email LIKE @SearchTerm) 
                     AND UserId != @CurrentUserId", conn);
-                
                 cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
                 cmd.Parameters.AddWithValue("@CurrentUserId", currentUserId);
-                
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -50,28 +43,21 @@ namespace BookHub.DAL
             }
             return users;
         }
-
-        // Send a friend request
         public bool SendFriendRequest(int fromUserId, int toUserId)
         {
             try
             {
                 if (fromUserId == toUserId)
                     return false;
-
-                // Check if request already exists or they're already friends
                 if (FriendRequestExists(fromUserId, toUserId) || AreFriends(fromUserId, toUserId))
                     return false;
-
                 using var conn = new SqlConnection(_connectionString);
                 var cmd = new SqlCommand(@"
                     INSERT INTO FriendRequests (FromUserId, ToUserId, RequestDate, Status) 
                     VALUES (@FromUserId, @ToUserId, @RequestDate, 'Pending')", conn);
-                
                 cmd.Parameters.AddWithValue("@FromUserId", fromUserId);
                 cmd.Parameters.AddWithValue("@ToUserId", toUserId);
                 cmd.Parameters.AddWithValue("@RequestDate", DateTime.Now);
-                
                 conn.Open();
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -80,8 +66,6 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Database error occurred while sending friend request: {ex.Message}", ex);
             }
         }
-
-        // Check if friend request already exists between two users
         public bool FriendRequestExists(int fromUserId, int toUserId)
         {
             try
@@ -92,10 +76,8 @@ namespace BookHub.DAL
                     WHERE ((FromUserId = @FromUserId AND ToUserId = @ToUserId) 
                            OR (FromUserId = @ToUserId AND ToUserId = @FromUserId)) 
                     AND Status = 'Pending'", conn);
-                
                 cmd.Parameters.AddWithValue("@FromUserId", fromUserId);
                 cmd.Parameters.AddWithValue("@ToUserId", toUserId);
-                
                 conn.Open();
                 int count = (int)cmd.ExecuteScalar();
                 return count > 0;
@@ -105,8 +87,6 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Database error occurred while checking friend request: {ex.Message}", ex);
             }
         }
-
-        // Check if two users are already friends
         public bool AreFriends(int userId1, int userId2)
         {
             try
@@ -116,10 +96,8 @@ namespace BookHub.DAL
                     SELECT COUNT(*) FROM Friends 
                     WHERE (UserId = @UserId1 AND FriendUserId = @UserId2) 
                        OR (UserId = @UserId2 AND FriendUserId = @UserId1)", conn);
-                
                 cmd.Parameters.AddWithValue("@UserId1", userId1);
                 cmd.Parameters.AddWithValue("@UserId2", userId2);
-                
                 conn.Open();
                 int count = (int)cmd.ExecuteScalar();
                 return count > 0;
@@ -129,8 +107,6 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Database error occurred while checking friendship: {ex.Message}", ex);
             }
         }
-
-        // Get pending friend requests for a user
         public List<FriendRequest> GetPendingRequests(int userId)
         {
             var requests = new List<FriendRequest>();
@@ -144,9 +120,7 @@ namespace BookHub.DAL
                     JOIN Users u ON fr.FromUserId = u.UserId
                     WHERE fr.ToUserId = @UserId AND fr.Status = 'Pending'
                     ORDER BY fr.RequestDate DESC", conn);
-                
                 cmd.Parameters.AddWithValue("@UserId", userId);
-                
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -175,8 +149,6 @@ namespace BookHub.DAL
             }
             return requests;
         }
-
-        // Accept a friend request
         public bool AcceptFriendRequest(int requestId, int userId)
         {
             try
@@ -184,57 +156,43 @@ namespace BookHub.DAL
                 using var conn = new SqlConnection(_connectionString);
                 conn.Open();
                 using var transaction = conn.BeginTransaction();
-                
                 try
                 {
-                    // Get request details
                     var getRequestCmd = new SqlCommand(@"
                         SELECT FromUserId, ToUserId FROM FriendRequests 
                         WHERE RequestId = @RequestId AND ToUserId = @UserId AND Status = 'Pending'", conn, transaction);
-                    
                     getRequestCmd.Parameters.AddWithValue("@RequestId", requestId);
                     getRequestCmd.Parameters.AddWithValue("@UserId", userId);
-                    
                     using var reader = getRequestCmd.ExecuteReader();
                     if (!reader.Read())
                     {
                         transaction.Rollback();
                         return false;
                     }
-                    
                     int fromUserId = (int)reader["FromUserId"];
                     int toUserId = (int)reader["ToUserId"];
                     reader.Close();
-                    
-                    // Update request status
                     var updateRequestCmd = new SqlCommand(@"
                         UPDATE FriendRequests 
                         SET Status = 'Accepted', ResponseDate = @ResponseDate 
                         WHERE RequestId = @RequestId", conn, transaction);
-                    
                     updateRequestCmd.Parameters.AddWithValue("@RequestId", requestId);
                     updateRequestCmd.Parameters.AddWithValue("@ResponseDate", DateTime.Now);
                     updateRequestCmd.ExecuteNonQuery();
-                    
-                    // Add friendship records (bidirectional)
                     var addFriend1Cmd = new SqlCommand(@"
                         INSERT INTO Friends (UserId, FriendUserId, FriendsSince) 
                         VALUES (@UserId, @FriendUserId, @FriendsSince)", conn, transaction);
-                    
                     addFriend1Cmd.Parameters.AddWithValue("@UserId", fromUserId);
                     addFriend1Cmd.Parameters.AddWithValue("@FriendUserId", toUserId);
                     addFriend1Cmd.Parameters.AddWithValue("@FriendsSince", DateTime.Now);
                     addFriend1Cmd.ExecuteNonQuery();
-                    
                     var addFriend2Cmd = new SqlCommand(@"
                         INSERT INTO Friends (UserId, FriendUserId, FriendsSince) 
                         VALUES (@UserId, @FriendUserId, @FriendsSince)", conn, transaction);
-                    
                     addFriend2Cmd.Parameters.AddWithValue("@UserId", toUserId);
                     addFriend2Cmd.Parameters.AddWithValue("@FriendUserId", fromUserId);
                     addFriend2Cmd.Parameters.AddWithValue("@FriendsSince", DateTime.Now);
                     addFriend2Cmd.ExecuteNonQuery();
-                    
                     transaction.Commit();
                     return true;
                 }
@@ -249,8 +207,6 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Database error occurred while accepting friend request: {ex.Message}", ex);
             }
         }
-
-        // Decline a friend request
         public bool DeclineFriendRequest(int requestId, int userId)
         {
             try
@@ -260,11 +216,9 @@ namespace BookHub.DAL
                     UPDATE FriendRequests 
                     SET Status = 'Declined', ResponseDate = @ResponseDate 
                     WHERE RequestId = @RequestId AND ToUserId = @UserId AND Status = 'Pending'", conn);
-                
                 cmd.Parameters.AddWithValue("@RequestId", requestId);
                 cmd.Parameters.AddWithValue("@UserId", userId);
                 cmd.Parameters.AddWithValue("@ResponseDate", DateTime.Now);
-                
                 conn.Open();
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -273,8 +227,6 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Database error occurred while declining friend request: {ex.Message}", ex);
             }
         }
-
-        // Get user's friends list
         public List<User> GetFriends(int userId)
         {
             var friends = new List<User>();
@@ -287,9 +239,7 @@ namespace BookHub.DAL
                     JOIN Users u ON f.FriendUserId = u.UserId
                     WHERE f.UserId = @UserId
                     ORDER BY f.FriendsSince DESC", conn);
-                
                 cmd.Parameters.AddWithValue("@UserId", userId);
-                
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -310,8 +260,6 @@ namespace BookHub.DAL
             }
             return friends;
         }
-
-        // Get friends' recent reading activity
         public List<dynamic> GetFriendsActivity(int userId)
         {
             var activities = new List<dynamic>();
@@ -335,9 +283,7 @@ namespace BookHub.DAL
                     JOIN BookReviews br ON u.UserId = br.UserId
                     JOIN Books b ON br.BookId = b.BookId
                     WHERE f.UserId = @UserId
-                    
                     UNION ALL
-                    
                     SELECT 
                         u.Name as UserName,
                         u.ProfileImage,
@@ -354,11 +300,8 @@ namespace BookHub.DAL
                     JOIN UserBooks ub ON u.UserId = ub.UserId
                     JOIN Books b ON ub.BookId = b.BookId
                     WHERE f.UserId = @UserId
-                    
                     ORDER BY ReviewDate DESC", conn);
-                
                 cmd.Parameters.AddWithValue("@UserId", userId);
-                
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -384,8 +327,6 @@ namespace BookHub.DAL
             }
             return activities;
         }
-
-        // Remove a friend
         public bool RemoveFriend(int userId, int friendUserId)
         {
             try
@@ -395,10 +336,8 @@ namespace BookHub.DAL
                     DELETE FROM Friends 
                     WHERE (UserId = @UserId AND FriendUserId = @FriendUserId) 
                        OR (UserId = @FriendUserId AND FriendUserId = @UserId)", conn);
-                
                 cmd.Parameters.AddWithValue("@UserId", userId);
                 cmd.Parameters.AddWithValue("@FriendUserId", friendUserId);
-                
                 conn.Open();
                 return cmd.ExecuteNonQuery() > 0;
             }

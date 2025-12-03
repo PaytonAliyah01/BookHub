@@ -1,0 +1,139 @@
+@page "/Community/ForumThread/{postId:int}"
+@model BookHub.Presentation.Pages.Community.ForumThreadDetailsModel
+@{
+    ViewData["Title"] = Model.Post?.Title ?? "Forum Thread";
+}
+
+<div class="container my-5">
+    @if (Model.Post == null)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Forum thread not found.
+        </div>
+        <a href="/Community/Forum" class="btn btn-primary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Forum
+        </a>
+    }
+    else
+    {
+        <div class="mb-3">
+            <a href="/Community/Forum" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-2"></i>Back to Forum
+            </a>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">@Model.Post.Title</h2>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <i class="bi bi-person-circle text-primary me-2"></i>
+                        <strong>User @Model.Post.UserId</strong>
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        @Model.Post.CreatedDate.ToString("MMM dd, yyyy hh:mm tt")
+                    </small>
+                </div>
+                
+                <div class="post-content">
+                    <p style="white-space: pre-wrap;">@Model.Post.Content</p>
+                </div>
+
+                @if (Model.Post.ClubId > 0)
+                {
+                    <div class="mt-3">
+                        <span class="badge bg-info">
+                            <i class="bi bi-people me-1"></i>Book Club Discussion
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-left-text me-2"></i>
+                    Replies (@Model.Replies.Count)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Replies.Any())
+                {
+                    <div class="replies-list">
+                        @foreach (var reply in Model.Replies.OrderBy(r => r.CreatedDate))
+                        {
+                            <div class="reply-item border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <i class="bi bi-person-circle text-secondary me-2"></i>
+                                        <strong>User @reply.UserId</strong>
+                                    </div>
+                                    <small class="text-muted">
+                                        @reply.CreatedDate.ToString("MMM dd, yyyy hh:mm tt")
+                                    </small>
+                                </div>
+                                <p class="mb-0 ms-4" style="white-space: pre-wrap;">@reply.Content</p>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-4">No replies yet. Be the first to reply!</p>
+                }
+
+                <div class="mt-4">
+                    <h6 class="mb-3">Add a Reply</h6>
+                    <form method="post" asp-page-handler="AddReply">
+                        <input type="hidden" name="postId" value="@Model.Post.PostId" />
+                        <div class="mb-3">
+                            <textarea name="content" 
+                                      class="form-control" 
+                                      rows="4" 
+                                      placeholder="Write your reply..." 
+                                      required 
+                                      maxlength="2000"></textarea>
+                            <small class="text-muted">Maximum 2000 characters</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-2"></i>Post Reply
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">@(TempData["MessageType"]?.ToString() == "success" ? "Success" : "Error")</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Message"]
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .post-content {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    .reply-item:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+</style>

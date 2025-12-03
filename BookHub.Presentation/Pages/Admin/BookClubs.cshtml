@@ -1,0 +1,166 @@
+@page "/Admin/BookClubs"
+@model BookHub.Presentation.Pages.Admin.BookClubsModel
+@{
+    ViewData["Title"] = "Book Clubs Management - Admin";
+}
+<div class="admin-container">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="page-title">
+                        <i class="bi bi-people me-2"></i>Book Clubs Management
+                    </h1>
+                    <p class="text-light mb-0">Manage all book clubs in the system</p>
+                </div>
+                <div class="col-auto">
+                    <a href="/Admin/Dashboard" class="btn btn-light">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        @if (ViewData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @ViewData["ErrorMessage"]
+            </div>
+        }
+        @if (TempData["Message"] != null)
+        {
+            var messageType = TempData["MessageType"]?.ToString() == "success" ? "success" : "danger";
+            <div class="alert alert-@messageType" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                @TempData["Message"]
+            </div>
+        }
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">All Book Clubs</h5>
+                <span class="badge bg-primary">@Model.BookClubs.Count clubs</span>
+            </div>
+            <div class="card-body">
+                @if (Model.BookClubs.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Club Name</th>
+                                    <th>Description</th>
+                                    <th>Created By</th>
+                                    <th>Members</th>
+                                    <th>Created Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (dynamic club in Model.BookClubs)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@club.ClubName</strong>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(club.Description))
+                                            {
+                                                var description = club.Description.ToString();
+                                                @(description.Length > 100 ? description.Substring(0, 100) + "..." : description)
+                                            }
+                                        </td>
+                                        <td>@club.CreatedBy</td>
+                                        <td>
+                                            <span class="badge bg-info">@club.MemberCount members</span>
+                                        </td>
+                                        <td>@(((DateTime)club.CreatedDate).ToString("MMM dd, yyyy"))</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-info" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" onclick="deleteBookClub(@club.ClubId, '@club.ClubName.ToString().Replace("'", "\\'"))')" title="Delete Club">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-people display-1 text-muted"></i>
+                        <h4 class="mt-3">No book clubs found</h4>
+                        <p class="text-muted">No book clubs have been created yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@section Styles {
+    <style>
+        .admin-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        .btn-group .btn {
+            margin-right: 2px;
+        }
+    </style>
+}
+@section Scripts {
+    <script>
+        function deleteBookClub(clubId, clubName) {
+            if (confirm(`Are you sure you want to delete "${clubName}"? This will remove all members and discussions. This action cannot be undone.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Admin/BookClubs?handler=DeleteBookClub';
+                const clubIdInput = document.createElement('input');
+                clubIdInput.type = 'hidden';
+                clubIdInput.name = 'clubId';
+                clubIdInput.value = clubId;
+                form.appendChild(clubIdInput);
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    const tokenClone = tokenInput.cloneNode();
+                    form.appendChild(tokenClone);
+                }
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

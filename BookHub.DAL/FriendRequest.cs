@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-
 namespace BookHub.DAL
 {
     public class FriendRequest
@@ -8,10 +7,8 @@ namespace BookHub.DAL
         public int FromUserId { get; set; }
         public int ToUserId { get; set; }
         public DateTime RequestDate { get; set; }
-        public string Status { get; set; } = "Pending"; // Pending, Accepted, Declined
+        public string Status { get; set; } = "Pending";
         public DateTime? ResponseDate { get; set; }
-        
-        // Navigation properties
         public User? FromUser { get; set; }
         public User? ToUser { get; set; }
     }

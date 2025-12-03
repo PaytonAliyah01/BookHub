@@ -1,0 +1,321 @@
+@page
+@model BookHub.Presentation.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "User Management - Admin";
+}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="admin-title">
+                        <i class="bi bi-people me-2"></i>
+                        User Management
+                    </h1>
+                    <p class="admin-subtitle">Manage all BookHub users and their activities</p>
+                </div>
+                <div class="col-auto">
+                    <div class="admin-actions">
+                        <a href="/Admin/Dashboard" class="btn btn-outline-light me-2">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                        <a href="/Admin/Books" class="btn btn-outline-light">
+                            <i class="bi bi-book me-1"></i>Manage Books
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        @if (ViewData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @ViewData["ErrorMessage"]
+            </div>
+        }
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("TotalUsers") ? Model.SystemStats["TotalUsers"] : 0)</h3>
+                        <p>Total Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("ActiveUsers") ? Model.SystemStats["ActiveUsers"] : 0)</h3>
+                        <p>Active Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("RecentRegistrations") ? Model.SystemStats["RecentRegistrations"] : 0)</h3>
+                        <p>New (30 days)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="bi bi-bookmark-heart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("TotalUserBooks") ? Model.SystemStats["TotalUserBooks"] : 0)</h3>
+                        <p>Books in Libraries</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5><i class="bi bi-table me-2"></i>All Users</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search users..." style="width: 200px;" id="userSearch">
+                </div>
+            </div>
+            <div class="admin-card-body">
+                @if (Model.Users.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Books</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">#@user.UserId</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="user-avatar me-2">
+                                                    <i class="bi bi-person-circle"></i>
+                                                </div>
+                                                <strong>@user.Name</strong>
+                                            </div>
+                                        </td>
+                                        <td>@user.Email</td>
+                                        <td>
+                                            <span class="badge bg-info">@(Model.UserBookCounts.ContainsKey(user.UserId) ? Model.UserBookCounts[user.UserId] : 0) books</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">Active</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/Admin/UserDetails/@user.UserId" class="btn btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button class="btn btn-outline-warning" onclick="toggleUserRestriction(@user.UserId, '@user.Name.Replace("'", "\\'")' false)" title="Restrict User">
+                                                    <i class="bi bi-lock"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="deleteUser(@user.UserId, '@user.Name.Replace("'", "\\'"))')" title="Delete User">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Users Found</h5>
+                        <p class="text-muted">No users have registered yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@section Styles {
+    <style>
+        .admin-dashboard {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .admin-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+        .stat-icon i {
+            font-size: 1.5rem;
+            color: white;
+        }
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+        }
+        .stat-content p {
+            color: #718096;
+            margin-bottom: 0;
+            font-weight: 500;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            margin-bottom: 2rem;
+        }
+        .admin-card-header {
+            padding: 1.5rem 1.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: none;
+        }
+        .admin-card-header h5 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0;
+        }
+        .admin-card-body {
+            padding: 1.5rem;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.875rem;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .user-avatar i {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+        .admin-actions .btn {
+            border-radius: 8px;
+        }
+    </style>
+}
+@section Scripts {
+    <script>
+        document.getElementById('userSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const tableRows = document.querySelectorAll('#usersTable tbody tr');
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+        
+        function toggleUserRestriction(userId, userName, currentRestricted) {
+            const action = currentRestricted ? 'unrestrict' : 'restrict';
+            const message = currentRestricted ? 
+                `Are you sure you want to unrestrict ${userName}?` : 
+                `Are you sure you want to restrict ${userName}? This will limit their access to the platform.`;
+            if (confirm(message)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Admin/Users?handler=RestrictUser';
+                const userIdInput = document.createElement('input');
+                userIdInput.type = 'hidden';
+                userIdInput.name = 'userId';
+                userIdInput.value = userId;
+                form.appendChild(userIdInput);
+                const restrictedInput = document.createElement('input');
+                restrictedInput.type = 'hidden';
+                restrictedInput.name = 'isRestricted';
+                restrictedInput.value = !currentRestricted;
+                form.appendChild(restrictedInput);
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    const tokenClone = tokenInput.cloneNode();
+                    form.appendChild(tokenClone);
+                }
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete user "${userName}"? This will permanently remove all their data including books, reviews, and reading history. This action cannot be undone.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Admin/Users?handler=DeleteUser';
+                const userIdInput = document.createElement('input');
+                userIdInput.type = 'hidden';
+                userIdInput.name = 'userId';
+                userIdInput.value = userId;
+                form.appendChild(userIdInput);
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    const tokenClone = tokenInput.cloneNode();
+                    form.appendChild(tokenClone);
+                }
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

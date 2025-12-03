@@ -1,42 +1,40 @@
 using BookHub.DAL;
-
 namespace BookHub.BLL
 {
-    public class ReadingGoalBLL
+    public class ReadingGoalBLL : IReadingGoalBLL
     {
         private readonly BookClubDAL_Simple _dal;
-
         public ReadingGoalBLL(string connectionString)
         {
             _dal = new BookClubDAL_Simple(connectionString);
         }
-
-        public List<BookHub.DAL.ReadingGoal> GetUserReadingGoals(int userId)
+        public List<ReadingGoalDto> GetUserReadingGoals(int userId)
         {
-            return _dal.GetUserReadingGoals(userId);
+            var dalGoals = _dal.GetUserReadingGoals(userId);
+            return dalGoals.Select(MapToDto).ToList();
         }
-
-        public BookHub.DAL.ReadingGoal? GetCurrentYearGoal(int userId)
+        public ReadingGoalDto? GetCurrentYearGoal(int userId)
         {
-            return _dal.GetUserReadingGoalByYear(userId, DateTime.Now.Year);
+            var dalGoal = _dal.GetUserReadingGoalByYear(userId, DateTime.Now.Year);
+            return dalGoal != null ? MapToDto(dalGoal) : null;
         }
-
-        public BookHub.DAL.ReadingGoal? GetGoalByYear(int userId, int year)
+        public ReadingGoalDto? GetGoalByYear(int userId, int year)
+        {
+            var dalGoal = _dal.GetUserReadingGoalByYear(userId, year);
+            return dalGoal != null ? MapToDto(dalGoal) : null;
+        }
+        internal BookHub.DAL.ReadingGoal? GetGoalByYearInternal(int userId, int year)
         {
             return _dal.GetUserReadingGoalByYear(userId, year);
         }
-
         public string SetReadingGoal(int userId, int year, int targetBooks)
         {
             if (targetBooks < 1)
                 return "Target must be at least 1 book";
-            
             if (targetBooks > 1000)
                 return "Target cannot exceed 1000 books";
-            
             if (year < 2020 || year > DateTime.Now.Year + 5)
                 return "Year must be between 2020 and " + (DateTime.Now.Year + 5);
-
             var goal = new BookHub.DAL.ReadingGoal
             {
                 UserId = userId,
@@ -44,96 +42,84 @@ namespace BookHub.BLL
                 TargetBooks = targetBooks,
                 BooksRead = 0
             };
-
-            // If updating current year goal, preserve books read count
             var existingGoal = _dal.GetUserReadingGoalByYear(userId, year);
             if (existingGoal != null)
             {
                 goal.BooksRead = existingGoal.BooksRead;
             }
-
             int result = _dal.CreateOrUpdateReadingGoal(goal);
             return result > 0 ? "Success" : "Failed to save reading goal";
         }
-
         public string UpdateProgress(int userId, int year, int booksRead)
         {
             if (booksRead < 0)
                 return "Books read cannot be negative";
-
             if (booksRead > 1000)
                 return "Books read cannot exceed 1000";
-
             var goal = _dal.GetUserReadingGoalByYear(userId, year);
             if (goal == null)
                 return "No reading goal found for this year";
-
             bool success = _dal.UpdateBooksRead(userId, year, booksRead);
             return success ? "Success" : "Failed to update progress";
         }
-
+        public string UpdateGoalTarget(int userId, int year, int newTargetBooks)
+        {
+            if (newTargetBooks < 1)
+                return "Target must be at least 1 book";
+            if (newTargetBooks > 1000)
+                return "Target cannot exceed 1000 books";
+            var goal = _dal.GetUserReadingGoalByYear(userId, year);
+            if (goal == null)
+                return "No reading goal found for this year. Please set a goal first.";
+            goal.TargetBooks = newTargetBooks;
+            int result = _dal.CreateOrUpdateReadingGoal(goal);
+            return result > 0 ? "Success" : "Failed to update goal target";
+        }
         public string IncrementProgress(int userId, int year = 0)
         {
             if (year == 0) year = DateTime.Now.Year;
-            
             var goal = _dal.GetUserReadingGoalByYear(userId, year);
             if (goal == null)
                 return "No reading goal found for this year";
-
             bool success = _dal.UpdateBooksRead(userId, year, goal.BooksRead + 1);
             return success ? "Success" : "Failed to update progress";
         }
-
         public string DecrementProgress(int userId, int year = 0)
         {
             if (year == 0) year = DateTime.Now.Year;
-            
             var goal = _dal.GetUserReadingGoalByYear(userId, year);
             if (goal == null)
                 return "No reading goal found for this year";
-
             if (goal.BooksRead <= 0)
                 return "Cannot reduce below 0 books";
-
             bool success = _dal.UpdateBooksRead(userId, year, goal.BooksRead - 1);
             return success ? "Success" : "Failed to update progress";
         }
-
         public string DeleteReadingGoal(int readingGoalId)
         {
             bool success = _dal.DeleteReadingGoal(readingGoalId);
             return success ? "Success" : "Failed to delete reading goal";
         }
-
         public List<int> GetAvailableYears()
         {
             var years = new List<int>();
-            int currentYear = DateTime.Now.Year; // This should be 2025
-            
-            // Add current year and next 5 years (no previous years)
+            int currentYear = DateTime.Now.Year;
             for (int i = currentYear; i <= currentYear + 5; i++)
             {
                 years.Add(i);
             }
-            
-            // Should return: 2025, 2026, 2027, 2028, 2029, 2030
             return years;
         }
-
-        public string GetMotivationalMessage(BookHub.DAL.ReadingGoal? goal)
+        public string GetMotivationalMessage(ReadingGoalDto? goal)
         {
             if (goal == null) return "Set a reading goal to get started!";
-
             if (goal.IsCompleted)
                 return $"🎉 Congratulations! You've achieved your goal of {goal.TargetBooks} books!";
-
             var today = DateTime.Now;
             var daysInYear = DateTime.IsLeapYear(goal.Year) ? 366 : 365;
             var daysPassed = today.DayOfYear - 1;
             var daysRemaining = daysInYear - daysPassed;
-
             var expectedProgress = (double)daysPassed / daysInYear * goal.TargetBooks;
-            
             if (goal.BooksRead >= expectedProgress)
             {
                 return $"📚 Great job! You're on track to reach your goal. {goal.BooksRemaining} books to go!";
@@ -144,32 +130,25 @@ namespace BookHub.BLL
                 return $"📖 You need to read about {booksNeededPerWeek} book(s) per week to reach your goal. You can do it!";
             }
         }
-
-        public Dictionary<string, object> GetProgressAnalytics(BookHub.DAL.ReadingGoal? goal)
+        public Dictionary<string, object> GetProgressAnalytics(ReadingGoalDto? goal)
         {
             var analytics = new Dictionary<string, object>();
-            
             if (goal == null)
             {
                 analytics["HasGoal"] = false;
                 return analytics;
             }
-
             var today = DateTime.Now;
             var startOfYear = new DateTime(goal.Year, 1, 1);
             var endOfYear = new DateTime(goal.Year, 12, 31);
             var daysInYear = DateTime.IsLeapYear(goal.Year) ? 366 : 365;
-            
-            // Only calculate for current or past years
             var daysPassed = goal.Year == today.Year ? today.DayOfYear - 1 : 
                            goal.Year < today.Year ? daysInYear : 0;
             var daysRemaining = goal.Year == today.Year ? daysInYear - daysPassed :
                               goal.Year > today.Year ? daysInYear : 0;
-            
             var expectedProgress = daysPassed > 0 ? (double)daysPassed / daysInYear * goal.TargetBooks : 0;
             var actualProgress = goal.BooksRead;
             var progressDifference = actualProgress - expectedProgress;
-            
             analytics["HasGoal"] = true;
             analytics["DaysPassed"] = daysPassed;
             analytics["DaysRemaining"] = daysRemaining;
@@ -184,8 +163,18 @@ namespace BookHub.BLL
             analytics["YearProgress"] = Math.Round((double)daysPassed / daysInYear * 100, 1);
             analytics["IsCurrentYear"] = goal.Year == today.Year;
             analytics["IsFutureYear"] = goal.Year > today.Year;
-            
             return analytics;
+        }
+        private ReadingGoalDto MapToDto(BookHub.DAL.ReadingGoal dalGoal)
+        {
+            return new ReadingGoalDto
+            {
+                ReadingGoalId = dalGoal.ReadingGoalId,
+                UserId = dalGoal.UserId,
+                Year = dalGoal.Year,
+                TargetBooks = dalGoal.TargetBooks,
+                BooksRead = dalGoal.BooksRead
+            };
         }
     }
 }

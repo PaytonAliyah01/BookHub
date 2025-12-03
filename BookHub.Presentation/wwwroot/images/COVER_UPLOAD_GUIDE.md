@@ -2,6 +2,24 @@
 
 ## How to Add Book Covers to BookHub
 
+### Method 1: Admin Dashboard (Recommended)
+The easiest way to add or update book covers:
+
+1. **Login as Admin**
+2. **Navigate to**: Admin Dashboard → Book Management
+3. **Click Edit** on any book
+4. **Upload Cover Image**: Choose a file from your computer
+   - Or enter a URL in the "Cover URL" field
+5. **Save Changes**
+
+The system automatically:
+- Validates image format and size
+- Generates unique filename
+- Deletes old cover if replacing
+- Updates the database
+
+### Method 2: Manual File Upload (Advanced)
+
 ### Step 1: Navigate to Images Folder
 Go to: `C:\Users\tiffa\BookHub\BookHub.Presentation\wwwroot\images\`
 

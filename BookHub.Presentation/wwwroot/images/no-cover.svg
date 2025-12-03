@@ -1,0 +1,10 @@
+<svg width="300" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="450" fill="#e9ecef"/>
+  <g transform="translate(150, 225)">
+    <path d="M -40 -60 L -40 40 L -30 50 L 30 50 L 40 40 L 40 -60 Z M -30 -50 L 30 -50 L 30 40 L -30 40 Z" fill="#6c757d"/>
+    <rect x="-20" y="-35" width="40" height="3" fill="#495057" rx="1"/>
+    <rect x="-20" y="-25" width="40" height="3" fill="#495057" rx="1"/>
+    <rect x="-20" y="-15" width="30" height="3" fill="#495057" rx="1"/>
+  </g>
+  <text x="150" y="380" font-family="Arial, sans-serif" font-size="18" fill="#6c757d" text-anchor="middle">No Cover Available</text>
+</svg>

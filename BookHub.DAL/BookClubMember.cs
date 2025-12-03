@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-
 namespace BookHub.DAL
 {
     public class BookClubMember
@@ -9,9 +8,7 @@ namespace BookHub.DAL
         public int UserId { get; set; }
         public bool IsApproved { get; set; } = false;
         public DateTime JoinedDate { get; set; } = DateTime.Now;
-        public string Role { get; set; } = "Member"; // Member, Moderator, Admin, Creator
-        
-        // Navigation properties
+        public string Role { get; set; } = "Member";
         public BookClub? BookClub { get; set; }
         public User? User { get; set; }
     }

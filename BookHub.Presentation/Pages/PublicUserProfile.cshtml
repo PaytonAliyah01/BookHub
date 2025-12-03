@@ -1,0 +1,206 @@
+@page "/Profile/{userId:int}"
+@model BookHub.Presentation.Pages.PublicUserProfileModel
+@{
+    ViewData["Title"] = $"User {Model.UserId}'s Profile";
+}
+
+<div class="container my-5">
+    @if (Model.ProfileUser == null)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            User not found.
+        </div>
+        <a href="/Community/Forum" class="btn btn-primary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Community
+        </a>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 6rem; color: #667eea;"></i>
+                        </div>
+                        <h3 class="mb-1">@Model.ProfileUser.Name</h3>
+                        <p class="text-muted mb-3">@Model.ProfileUser.Email</p>
+                        
+                        @if (Model.IsFriend)
+                        {
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>Friends
+                            </span>
+                        }
+                        else if (Model.HasPendingRequest)
+                        {
+                            <span class="badge bg-warning">
+                                <i class="bi bi-clock me-1"></i>Friend Request Pending
+                            </span>
+                        }
+                        else if (!Model.IsOwnProfile)
+                        {
+                            <form method="post" asp-page-handler="SendFriendRequest">
+                                <input type="hidden" name="targetUserId" value="@Model.UserId" />
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus me-2"></i>Send Friend Request
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Reading Stats</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Total Books</span>
+                                <strong>@Model.TotalBooks</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Books Read</span>
+                                <strong class="text-success">@Model.BooksRead</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Currently Reading</span>
+                                <strong class="text-primary">@Model.BooksReading</strong>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Want to Read</span>
+                                <strong class="text-info">@Model.BooksWantToRead</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-book me-2"></i>Public Bookshelf</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.PublicBooks.Any())
+                        {
+                            <div class="row row-cols-1 row-cols-md-3 g-3">
+                                @foreach (var book in Model.PublicBooks.Take(12))
+                                {
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            <img src="@(string.IsNullOrEmpty(book.CoverUrl) ? "/images/no-cover.jpg" : book.CoverUrl)" 
+                                                 class="card-img-top" 
+                                                 alt="@book.Title"
+                                                 style="height: 200px; object-fit: cover;">
+                                            <div class="card-body p-2">
+                                                <h6 class="card-title small mb-1">@book.Title</h6>
+                                                <p class="card-text text-muted small mb-0">@book.Author</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            @if (Model.PublicBooks.Count > 12)
+                            {
+                                <p class="text-muted text-center mt-3">
+                                    And @(Model.PublicBooks.Count - 12) more books...
+                                </p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center py-4">No books in public bookshelf</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-star me-2"></i>Recent Reviews</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.RecentReviews.Any())
+                        {
+                            @foreach (var review in Model.RecentReviews.Take(5))
+                            {
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <h6 class="mb-0">Book @review.BookId</h6>
+                                        <div>
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= review.Rating)
+                                                {
+                                                    <i class="bi bi-star-fill text-warning"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star text-warning"></i>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <p class="mb-1">@review.ReviewText</p>
+                                    <small class="text-muted">@review.ReviewDate.ToString("MMM dd, yyyy")</small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center py-4">No reviews yet</p>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.ReadingGoal != null)
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Reading Goal</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>@Model.ReadingGoal.Year Reading Challenge</h6>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar" 
+                                     role="progressbar" 
+                                     style="width: @Model.GoalProgress%;"
+                                     aria-valuenow="@Model.GoalProgress" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    @Model.GoalProgress%
+                                </div>
+                            </div>
+                            <p class="mb-0">
+                                <strong>@Model.ReadingGoal.BooksRead</strong> of <strong>@Model.ReadingGoal.TargetBooks</strong> books
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">@(TempData["MessageType"]?.ToString() == "success" ? "Success" : "Error")</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Message"]
+            </div>
+        </div>
+    </div>
+}

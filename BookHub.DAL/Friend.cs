@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-
 namespace BookHub.DAL
 {
     public class Friend
@@ -8,8 +7,6 @@ namespace BookHub.DAL
         public int UserId { get; set; }
         public int FriendUserId { get; set; }
         public DateTime FriendsSince { get; set; }
-        
-        // Navigation properties
         public User? User { get; set; }
         public User? FriendUser { get; set; }
     }

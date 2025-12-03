@@ -1,19 +1,16 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
-
+using BookHub.DAL.Interfaces;
 namespace BookHub.DAL
 {
-    public class BookReviewDAL
+    public class BookReviewDAL : IBookReviewDAL
     {
         private readonly string _connectionString;
-
         public BookReviewDAL(string connectionString)
         {
             _connectionString = connectionString;
         }
-
-        // Add a new review
         public bool AddReview(BookReview review)
         {
             try
@@ -24,7 +21,6 @@ namespace BookHub.DAL
                     var query = @"
                         INSERT INTO BookReviews (BookId, UserId, Rating, ReviewTitle, ReviewText, ReviewDate, IsRecommended)
                         VALUES (@BookId, @UserId, @Rating, @ReviewTitle, @ReviewText, @ReviewDate, @IsRecommended)";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@BookId", review.BookId);
@@ -34,7 +30,6 @@ namespace BookHub.DAL
                         command.Parameters.AddWithValue("@ReviewText", review.ReviewText);
                         command.Parameters.AddWithValue("@ReviewDate", review.ReviewDate);
                         command.Parameters.AddWithValue("@IsRecommended", review.IsRecommended);
-
                         return command.ExecuteNonQuery() > 0;
                     }
                 }
@@ -44,8 +39,6 @@ namespace BookHub.DAL
                 return false;
             }
         }
-
-        // Update an existing review
         public bool UpdateReview(BookReview review)
         {
             try
@@ -58,7 +51,6 @@ namespace BookHub.DAL
                         SET Rating = @Rating, ReviewTitle = @ReviewTitle, ReviewText = @ReviewText, 
                             LastModified = @LastModified, IsRecommended = @IsRecommended
                         WHERE ReviewId = @ReviewId AND UserId = @UserId";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Rating", review.Rating);
@@ -68,7 +60,6 @@ namespace BookHub.DAL
                         command.Parameters.AddWithValue("@IsRecommended", review.IsRecommended);
                         command.Parameters.AddWithValue("@ReviewId", review.ReviewId);
                         command.Parameters.AddWithValue("@UserId", review.UserId);
-
                         return command.ExecuteNonQuery() > 0;
                     }
                 }
@@ -78,12 +69,9 @@ namespace BookHub.DAL
                 return false;
             }
         }
-
-        // Get all reviews for a specific book
         public List<BookReview> GetReviewsForBook(int bookId)
         {
             var reviews = new List<BookReview>();
-
             try
             {
                 using (var connection = new SqlConnection(_connectionString))
@@ -99,11 +87,9 @@ namespace BookHub.DAL
                         JOIN Users u ON r.UserId = u.UserId
                         WHERE r.BookId = @BookId
                         ORDER BY r.ReviewDate DESC";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@BookId", bookId);
-
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -131,13 +117,9 @@ namespace BookHub.DAL
             }
             catch (Exception)
             {
-                // Return empty list on error
             }
-
             return reviews;
         }
-
-        // Get a user's review for a specific book
         public BookReview? GetUserReviewForBook(int userId, int bookId)
         {
             try
@@ -152,12 +134,10 @@ namespace BookHub.DAL
                         FROM BookReviews r
                         JOIN Books b ON r.BookId = b.BookId
                         WHERE r.UserId = @UserId AND r.BookId = @BookId";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@UserId", userId);
                         command.Parameters.AddWithValue("@BookId", bookId);
-
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -183,13 +163,9 @@ namespace BookHub.DAL
             }
             catch (Exception)
             {
-                // Return null on error
             }
-
             return null;
         }
-
-        // Delete a review
         public bool DeleteReview(int reviewId, int userId)
         {
             try
@@ -198,12 +174,10 @@ namespace BookHub.DAL
                 {
                     connection.Open();
                     var query = "DELETE FROM BookReviews WHERE ReviewId = @ReviewId AND UserId = @UserId";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@ReviewId", reviewId);
                         command.Parameters.AddWithValue("@UserId", userId);
-
                         return command.ExecuteNonQuery() > 0;
                     }
                 }
@@ -213,8 +187,6 @@ namespace BookHub.DAL
                 return false;
             }
         }
-
-        // Get average rating for a book
         public (double averageRating, int reviewCount) GetBookRatingStats(int bookId)
         {
             try
@@ -226,11 +198,9 @@ namespace BookHub.DAL
                         SELECT AVG(CAST(Rating AS FLOAT)) as AverageRating, COUNT(*) as ReviewCount
                         FROM BookReviews 
                         WHERE BookId = @BookId";
-
                     using (var command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@BookId", bookId);
-
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -245,9 +215,7 @@ namespace BookHub.DAL
             }
             catch (Exception)
             {
-                // Return default values on error
             }
-
             return (0.0, 0);
         }
     }

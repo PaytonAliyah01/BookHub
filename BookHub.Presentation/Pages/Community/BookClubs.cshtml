@@ -1,0 +1,671 @@
+@page "/Community/BookClubs"
+@model BookHub.Presentation.Pages.BookClubsModel
+@{
+    ViewData["Title"] = "Book Clubs";
+}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-users me-2"></i>Book Clubs
+            </h2>
+            <ul class="nav nav-tabs mb-4" id="bookClubTabs">
+                <li class="nav-item">
+                    <a class="nav-link @(Model.CurrentTab == "browse" ? "active" : "")" 
+                       href="?tab=browse">
+                        <i class="fas fa-search me-1"></i>Browse Clubs
+                    </a>
+                </li>
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentTab == "my-clubs" ? "active" : "")" 
+                           href="?tab=my-clubs">
+                            <i class="fas fa-bookmark me-1"></i>My Clubs (@Model.UserBookClubs.Count)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentTab == "create" ? "active" : "")" 
+                           href="?tab=create">
+                            <i class="fas fa-plus me-1"></i>Create Club
+                        </a>
+                    </li>
+                    @if (Model.CurrentTab == "manage")
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">
+                                <i class="fas fa-cog me-1"></i>Manage Members
+                            </a>
+                        </li>
+                    }
+                }
+            </ul>
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="tab-content">
+        @if (Model.CurrentTab == "browse")
+        {
+            <div class="tab-pane fade show active">
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-10">
+                        <form method="post" asp-page-handler="Search" class="search-form">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" asp-for="SearchTerm" 
+                                           placeholder="Search book clubs by name or description..." 
+                                           value="@Model.SearchTerm">
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-select" asp-for="SelectedGenre">
+                                        <option value="">All Genres</option>
+                                        @foreach (var genre in Model.AvailableGenres)
+                                        {
+                                            <option value="@genre" selected="@(Model.SelectedGenre == genre)">@genre</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100" type="submit">
+                                        <i class="fas fa-search me-1"></i>Search
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                @if (Model.BookClubs.Any())
+                {
+                    <div class="row">
+                        @foreach (var club in Model.BookClubs)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card book-club-card h-100">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h5 class="card-title mb-0">@club.Name</h5>
+                                            @if (!string.IsNullOrEmpty(club.Genre))
+                                            {
+                                                <span class="badge bg-secondary">@club.Genre</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(club.Description))
+                                        {
+                                            <p class="card-text text-muted mb-3">
+                                                @(club.Description.Length > 100 ? club.Description.Substring(0, 100) + "..." : club.Description)
+                                            </p>
+                                        }
+                                        <div class="club-info mb-3">
+                                            <div class="d-flex justify-content-between text-sm mb-1">
+                                                <span><i class="fas fa-user me-1"></i>Created by: @club.Owner?.Name</span>
+                                                <span><i class="fas fa-calendar me-1"></i>@club.CreatedDate.ToString("MMM yyyy")</span>
+                                            </div>
+                                            @if (club.CurrentBook != null)
+                                            {
+                                                <div class="current-book mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-book me-1"></i>Currently reading: 
+                                                        <strong>@club.CurrentBook.Title</strong> by @club.CurrentBook.Author
+                                                    </small>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(club.MeetingSchedule))
+                                            {
+                                                <div class="meeting-schedule mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>@club.MeetingSchedule
+                                                    </small>
+                                                </div>
+                                            }
+                                            <div class="members-info">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-users me-1"></i>
+                                                    Members: <span id="member-count-@club.ClubId">?</span>/@club.MaxMembers
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="mt-auto">
+                                            <div class="d-flex gap-2">
+                                                <a href="/Community/BookClub/@club.ClubId" class="btn btn-outline-primary btn-sm flex-fill">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                                @if (User.Identity?.IsAuthenticated ?? false)
+                                                {
+                                                    var status = Model.MembershipStatus.GetValueOrDefault(club.ClubId, "Unknown");
+                                                    @if (status == "Member" || status == "Creator")
+                                                    {
+                                                        <a href="/Forum?clubId=@club.ClubId" class="btn btn-outline-info btn-sm" title="Discussion Forum">
+                                                            <i class="fas fa-comments me-1"></i>Forum
+                                                        </a>
+                                                    }
+                                                }
+                                                @if (User.Identity?.IsAuthenticated ?? false)
+                                                {
+                                                    var status = Model.MembershipStatus.GetValueOrDefault(club.ClubId, "Unknown");
+                                                    <div id="action-@club.ClubId">
+                                                        @switch (status)
+                                                        {
+                                                            case "Member":
+                                                            case "Creator":
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-check me-1"></i>@status
+                                                                </span>
+                                                                @if (status != "Creator")
+                                                                {
+                                                                    <button class="btn btn-outline-danger btn-sm" 
+                                                                            onclick="leaveClub(@club.ClubId, '@club.Name')">>
+                                                                        <i class="fas fa-sign-out-alt me-1"></i>Leave
+                                                                    </button>
+                                                                }
+                                                                break;
+                                                            case "Full":
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-users me-1"></i>Full
+                                                                </span>
+                                                                break;
+                                                            case "NotMember":
+                                                                <button class="btn btn-success btn-sm" 
+                                                                        onclick="joinClub(@club.ClubId, '@club.Name')">>
+                                                                    <i class="fas fa-plus me-1"></i>Join
+                                                                </button>
+                                                                break;
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <a href="/Auth/Login" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Join
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.SelectedGenre))
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Book Clubs Found</h4>
+                        <p class="text-muted">No book clubs match your search criteria. Try different keywords or browse all clubs.</p>
+                        <a href="/Community/BookClubs?tab=browse" class="btn btn-primary">
+                            <i class="fas fa-list me-1"></i>Browse All Clubs
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Book Clubs Yet</h4>
+                        <p class="text-muted">Be the first to create a book club and start building a reading community!</p>
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <a href="?tab=create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Create First Club
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/Auth/Login" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login to Create Club
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        @if (Model.CurrentTab == "my-clubs")
+        {
+            <div class="tab-pane fade show active">
+                @if (Model.UserBookClubs.Any())
+                {
+                    <div class="row">
+                        @foreach (var club in Model.UserBookClubs)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card book-club-card h-100 border-primary">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h5 class="card-title mb-0">@club.Name</h5>
+                                            @if (!string.IsNullOrEmpty(club.Genre))
+                                            {
+                                                <span class="badge bg-primary">@club.Genre</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(club.Description))
+                                        {
+                                            <p class="card-text text-muted mb-3">
+                                                @(club.Description.Length > 100 ? club.Description.Substring(0, 100) + "..." : club.Description)
+                                            </p>
+                                        }
+                                        <div class="club-info mb-3">
+                                            @if (club.CurrentBook != null)
+                                            {
+                                                <div class="current-book mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-book me-1"></i>Currently reading: 
+                                                        <strong>@club.CurrentBook.Title</strong>
+                                                    </small>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(club.MeetingSchedule))
+                                            {
+                                                <div class="meeting-schedule mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>@club.MeetingSchedule
+                                                    </small>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="mt-auto">
+                                            <div class="d-flex gap-2">
+                                                <a href="/Community/BookClub/@club.ClubId" class="btn btn-primary btn-sm flex-fill">
+                                                    <i class="fas fa-arrow-right me-1"></i>View Club
+                                                </a>
+                                                @if (club.OwnerId.ToString() == Model.CurrentUserId)
+                                                {
+                                                    <a href="?tab=manage&clubId=@club.ClubId" class="btn btn-outline-success btn-sm">
+                                                        <i class="fas fa-cog me-1"></i>Manage
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-outline-danger btn-sm" 
+                                                            onclick="leaveClub(@club.ClubId, '@club.Name')"
+                                                            title="Leave this book club">
+                                                        <i class="fas fa-sign-out-alt me-1"></i>Leave
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-bookmark fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">You Haven't Joined Any Book Clubs</h4>
+                        <p class="text-muted">Explore book clubs and join communities that match your reading interests.</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="?tab=browse" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-1"></i>Browse Clubs
+                            </a>
+                            <a href="?tab=create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Create Your Own
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        @if (Model.CurrentTab == "create")
+        {
+            <div class="tab-pane fade show active">
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-plus-circle me-2"></i>Create New Book Club
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" asp-page-handler="CreateClub">
+                                    <div class="mb-3">
+                                        <label asp-for="NewBookClub.Name" class="form-label">Club Name *</label>
+                                        <input asp-for="NewBookClub.Name" class="form-control" placeholder="Enter book club name" required>
+                                        <div class="form-text">Choose a memorable name for your book club (max 100 characters)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label asp-for="NewBookClub.Description" class="form-label">Description</label>
+                                        <textarea asp-for="NewBookClub.Description" class="form-control" rows="4" 
+                                                  placeholder="Describe your book club's purpose, reading preferences, and goals..."></textarea>
+                                        <div class="form-text">Help people understand what your book club is about (max 500 characters)</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label asp-for="NewBookClub.Genre" class="form-label">Preferred Genre</label>
+                                            <select asp-for="NewBookClub.Genre" class="form-select">
+                                                <option value="">All Genres</option>
+                                                @foreach (var genre in Model.AvailableGenres)
+                                                {
+                                                    <option value="@genre">@genre</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label asp-for="NewBookClub.MaxMembers" class="form-label">Max Members *</label>
+                                            <input asp-for="NewBookClub.MaxMembers" type="number" class="form-control" 
+                                                   min="2" max="1000" value="20" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label asp-for="NewBookClub.MeetingSchedule" class="form-label">Meeting Schedule</label>
+                                        <input asp-for="NewBookClub.MeetingSchedule" class="form-control" 
+                                               placeholder="e.g., Every 2nd Sunday at 3 PM, Monthly virtual meetings">
+                                        <div class="form-text">When and how often does your book club meet?</div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div class="form-check">
+                                            <input asp-for="NewBookClub.IsPrivate" class="form-check-input" type="checkbox">
+                                            <label asp-for="NewBookClub.IsPrivate" class="form-check-label">
+                                                Private Club
+                                            </label>
+                                            <div class="form-text">Private clubs won't appear in public listings and require invitations to join</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-plus-circle me-2"></i>Create Book Club
+                                        </button>
+                                        <a href="?tab=browse" class="btn btn-outline-secondary">
+                                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.CurrentTab == "manage")
+        {
+            <div class="tab-pane fade show active">
+                <div class="row">
+                    <div class="col-lg-8">
+                        @if (Model.PendingMembers?.Any() == true)
+                        {
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-clock text-warning me-2"></i>
+                                        Pending Member Requests (@Model.PendingMembers.Count)
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    @foreach (var member in Model.PendingMembers)
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                            <div>
+                                                <strong>@(member.User?.Name ?? "Unknown User")</strong>
+                                                <small class="text-muted d-block">Requested: @member.JoinedDate.ToString("MMM dd, yyyy")</small>
+                                            </div>
+                                            <div>
+                                                <form method="post" asp-page-handler="ApproveMember" class="d-inline">
+                                                    <input type="hidden" name="clubId" value="@Model.SelectedClubId" />
+                                                    <input type="hidden" name="userId" value="@member.UserId" />
+                                                    <button type="submit" class="btn btn-success btn-sm me-1">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                </form>
+                                                <form method="post" asp-page-handler="RemoveMember" class="d-inline">
+                                                    <input type="hidden" name="clubId" value="@Model.SelectedClubId" />
+                                                    <input type="hidden" name="userId" value="@member.UserId" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="fas fa-times"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if (Model.CurrentMembers?.Any() == true)
+                        {
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-users text-primary me-2"></i>
+                                        Current Members (@Model.CurrentMembers.Count)
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    @foreach (var member in Model.CurrentMembers)
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                            <div>
+                                                <strong>@(member.User?.Name ?? "Unknown User")</strong>
+                                                <span class="badge bg-@(member.Role == "Creator" ? "primary" : member.Role == "Admin" ? "success" : member.Role == "Moderator" ? "info" : "secondary") ms-2">
+                                                    @member.Role
+                                                </span>
+                                                <small class="text-muted d-block">Joined: @member.JoinedDate.ToString("MMM dd, yyyy")</small>
+                                            </div>
+                                            @if (member.Role != "Creator")
+                                            {
+                                                <div>
+                                                    <form method="post" asp-page-handler="ChangeRole" class="d-inline me-1">
+                                                        <input type="hidden" name="clubId" value="@Model.SelectedClubId" />
+                                                        <input type="hidden" name="userId" value="@member.UserId" />
+                                                    <select name="newRole" class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="this.form.submit()">
+                                                        <option value="Member" selected="@(member.Role == "Member")">Member</option>
+                                                        <option value="Moderator" selected="@(member.Role == "Moderator")">Moderator</option>
+                                                        <option value="Admin" selected="@(member.Role == "Admin")">Admin</option>
+                                                    </select>
+                                                    </form>
+                                                    <form method="post" asp-page-handler="RemoveMember" class="d-inline">
+                                                        <input type="hidden" name="clubId" value="@Model.SelectedClubId" />
+                                                        <input type="hidden" name="userId" value="@member.UserId" />
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                                onclick="return confirm('Are you sure you want to remove this member?')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if ((Model.PendingMembers?.Count ?? 0) == 0 && (Model.CurrentMembers?.Count ?? 0) == 0)
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-users fa-3x mb-3"></i>
+                                <h5>No members yet</h5>
+                                <p>When users request to join your club, you'll see them here.</p>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Club Information</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (Model.SelectedClub != null)
+                                {
+                                    <h6>@Model.SelectedClub.Name</h6>
+                                    <p class="text-muted">@Model.SelectedClub.Description</p>
+                                    <hr>
+                                    <small class="text-muted">
+                                        <strong>Total Members:</strong> @((Model.CurrentMembers?.Count ?? 0) + (Model.PendingMembers?.Count ?? 0))
+                                        <br>
+                                        <strong>Approved:</strong> @(Model.CurrentMembers?.Count ?? 0)
+                                        <br>
+                                        <strong>Pending:</strong> @(Model.PendingMembers?.Count ?? 0)
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+@section Scripts {
+    <script>
+        async function joinClub(bookClubId, clubName) {
+            if (!confirm(`Are you sure you want to join "${clubName}"?`)) {
+                return;
+            }
+            try {
+                const formData = new FormData();
+                formData.append('bookClubId', bookClubId);
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                const response = await fetch('/BookClubs?handler=JoinClub', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('success', result.message);
+                    const actionDiv = document.getElementById(`action-${bookClubId}`);
+                    actionDiv.innerHTML = `
+                        <span class="badge bg-warning">
+                            <i class="fas fa-clock me-1"></i>Pending Approval
+                        </span>
+                        <button class="btn btn-outline-secondary btn-sm" 
+                                onclick="cancelRequest(${bookClubId}, '${clubName}')">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                    `;
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                showAlert('danger', 'Error joining book club. Please try again.');
+            }
+        }
+        async function cancelRequest(bookClubId, clubName) {
+            if (!confirm(`Are you sure you want to cancel your request to join "${clubName}"?`)) {
+                return;
+            }
+            try {
+                const formData = new FormData();
+                formData.append('bookClubId', bookClubId);
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                const response = await fetch('/BookClubs?handler=LeaveClub', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('success', 'Membership request cancelled successfully.');
+                    const actionDiv = document.getElementById(`action-${bookClubId}`);
+                    actionDiv.innerHTML = `
+                        <button class="btn btn-success btn-sm" 
+                                onclick="joinClub(${bookClubId}, '${clubName}')">
+                            <i class="fas fa-plus me-1"></i>Join
+                        </button>
+                    `;
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                showAlert('danger', 'Error cancelling request. Please try again.');
+            }
+        }
+        async function leaveClub(bookClubId, clubName) {
+            if (!confirm(`Are you sure you want to leave "${clubName}"?`)) {
+                return;
+            }
+            try {
+                const formData = new FormData();
+                formData.append('bookClubId', bookClubId);
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                const response = await fetch('/BookClubs?handler=LeaveClub', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('success', result.message);
+                    const actionDiv = document.getElementById(`action-${bookClubId}`);
+                    if (actionDiv) {
+                        actionDiv.innerHTML = `
+                            <button class="btn btn-success btn-sm" 
+                                    onclick="joinClub(${bookClubId}, '${clubName}')">
+                                <i class="fas fa-plus me-1"></i>Join
+                            </button>
+                        `;
+                    }
+                    if (window.location.href.includes('tab=my-clubs')) {
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                showAlert('danger', 'Error leaving book club. Please try again.');
+            }
+        }
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            const container = document.querySelector('.container');
+            container.insertBefore(alertDiv, container.firstChild);
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    </script>
+}
+<style>
+    .book-club-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e9ecef;
+    }
+    .book-club-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .search-form {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .nav-tabs .nav-link {
+        border-radius: 8px 8px 0 0;
+        margin-right: 5px;
+    }
+    .badge {
+        font-size: 0.75em;
+    }
+    .club-info {
+        font-size: 0.9em;
+    }
+    .current-book {
+        background: #e3f2fd;
+        padding: 8px;
+        border-radius: 4px;
+        border-left: 3px solid #2196f3;
+    }
+    .meeting-schedule {
+        background: #f3e5f5;
+        padding: 6px;
+        border-radius: 4px;
+    }
+    .text-sm {
+        font-size: 0.875rem;
+    }
+</style>

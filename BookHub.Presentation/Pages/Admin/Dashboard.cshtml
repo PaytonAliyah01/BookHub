@@ -1,0 +1,294 @@
+@page
+@model BookHub.Presentation.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard - BookHub";
+}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="admin-title">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        Admin Dashboard
+                    </h1>
+                    <p class="admin-subtitle">Welcome back, @Model.GetAdminUsername()!</p>
+                </div>
+                <div class="col-auto">
+                    <div class="admin-actions">
+                        <a href="/Admin/Users" class="btn btn-outline-light me-2">
+                            <i class="bi bi-people me-1"></i>Manage Users
+                        </a>
+                        <a href="/Admin/Books" class="btn btn-outline-light">
+                            <i class="bi bi-book me-1"></i>Manage Books
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        @if (ViewData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @ViewData["ErrorMessage"]
+            </div>
+        }
+        <div class="row">
+            <div class="col-md-3 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("TotalUsers") ? Model.SystemStats["TotalUsers"] : 0)</h3>
+                        <p>Total Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("TotalBooks") ? Model.SystemStats["TotalBooks"] : 0)</h3>
+                        <p>Total Books</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="bi bi-bookmark-heart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("TotalUserBooks") ? Model.SystemStats["TotalUserBooks"] : 0)</h3>
+                        <p>Books in Libraries</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-info">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@(Model.SystemStats.ContainsKey("RecentRegistrations") ? Model.SystemStats["RecentRegistrations"] : 0)</h3>
+                        <p>New Users (30 days)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5><i class="bi bi-people me-2"></i>Recent Users</h5>
+                        <a href="/Admin/Users" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="admin-card-body">
+                        @if (Model.RecentUsers.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Registered</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var user in Model.RecentUsers)
+                                        {
+                                            <tr>
+                                                <td>@user.Name</td>
+                                                <td>@user.Email</td>
+                                                <td>ID: @user.UserId</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No users found.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5><i class="bi bi-book me-2"></i>Recent Books</h5>
+                        <a href="/Admin/Books" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="admin-card-body">
+                        @if (Model.RecentBooks.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Author</th>
+                                            <th>Genre</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var book in Model.RecentBooks)
+                                        {
+                                            <tr>
+                                                <td>@book.Title</td>
+                                                <td>@book.Author</td>
+                                                <td>@book.Genre</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No books found.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                        <a href="/Admin/AddBook" class="btn btn-success w-100">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Add New Book
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/Admin/Users" class="btn btn-primary w-100">
+                                    <i class="bi bi-person-gear me-2"></i>
+                                    User Management
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/Admin/Books" class="btn btn-info w-100">
+                                    <i class="bi bi-book-half me-2"></i>
+                                    Book Management
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-house me-2"></i>
+                                    View Site
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Styles {
+    <style>
+        .admin-dashboard {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .admin-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+        .stat-icon i {
+            font-size: 1.5rem;
+            color: white;
+        }
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+        }
+        .stat-content p {
+            color: #718096;
+            margin-bottom: 0;
+            font-weight: 500;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            margin-bottom: 2rem;
+        }
+        .admin-card-header {
+            padding: 1.5rem 1.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: none;
+        }
+        .admin-card-header h5 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0;
+        }
+        .admin-card-body {
+            padding: 1.5rem;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.875rem;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .admin-actions .btn {
+            border-radius: 8px;
+        }
+    </style>
+}

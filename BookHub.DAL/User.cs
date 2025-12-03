@@ -7,5 +7,6 @@ namespace BookHub.DAL
         public string Email { get; set; } = string.Empty;
         public string Bio { get; set; } = string.Empty;
         public string ProfileImage { get; set; } = "default.png";
+        public bool IsRestricted { get; set; } = false;
     }
 }

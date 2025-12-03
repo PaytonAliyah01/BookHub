@@ -1,0 +1,299 @@
+@page
+@model BookHub.Presentation.Pages.Admin.BooksModel
+@{
+    ViewData["Title"] = "Book Management - Admin";
+}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="admin-title">
+                        <i class="bi bi-book me-2"></i>
+                        Book Management
+                    </h1>
+                    <p class="admin-subtitle">Manage all books in the BookHub library</p>
+                </div>
+                <div class="col-auto">
+                    <div class="admin-actions">
+                        <a href="/Admin/Dashboard" class="btn btn-outline-light me-2">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                        <a href="/Admin/Users" class="btn btn-outline-light me-2">
+                            <i class="bi bi-people me-1"></i>Manage Users
+                        </a>
+                        <a href="/Admin/AddBook" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-1"></i>Add Book
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        @if (ViewData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @ViewData["ErrorMessage"]
+            </div>
+        }
+        @if (TempData["Message"] != null)
+        {
+            var messageType = TempData["MessageType"]?.ToString() == "success" ? "success" : "danger";
+            <div class="alert alert-@messageType" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                @TempData["Message"]
+            </div>
+        }
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5><i class="bi bi-table me-2"></i>All Books (@Model.Books.Count)</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search books..." style="width: 200px;" id="bookSearch">
+                    <select class="form-select form-select-sm" style="width: 150px;" id="genreFilter">
+                        <option value="">All Genres</option>
+                        @foreach (var genre in Model.Books.Select(b => b.Genre).Distinct().Where(g => !string.IsNullOrEmpty(g)))
+                        {
+                            <option value="@genre">@genre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="admin-card-body">
+                @if (Model.Books.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="booksTable">
+                            <thead>
+                                <tr>
+                                    <th>Cover</th>
+                                    <th>Book ID</th>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Genre</th>
+                                    <th>ISBN</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var book in Model.Books)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(book.CoverUrl))
+                                            {
+                                                <img src="@book.CoverUrl" alt="Book Cover" class="book-cover-small" onerror="this.src='/images/no-cover.svg'">
+                                            }
+                                            else
+                                            {
+                                                <div class="no-cover-placeholder">
+                                                    <i class="bi bi-book"></i>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">#@book.BookId</span>
+                                        </td>
+                                        <td>
+                                            <div class="book-title">
+                                                <strong>@book.Title</strong>
+                                            </div>
+                                        </td>
+                                        <td>@book.Author</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(book.Genre))
+                                            {
+                                                <span class="badge bg-info">@book.Genre</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No Genre</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(book.ISBN))
+                                            {
+                                                <code class="text-muted">@book.ISBN</code>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No ISBN</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" title="View Details" onclick="viewBookDetails(@book.BookId)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" title="Edit Book" onclick="editBook(@book.BookId)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" title="Delete Book" onclick="confirmDelete(@book.BookId, '@book.Title')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Books Found</h5>
+                        <p class="text-muted">No books have been added to the library yet.</p>
+                        <a href="/Admin/AddBook" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add First Book
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                    Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this book?</p>
+                <div class="alert alert-warning">
+                    <strong>Book:</strong> <span id="bookToDelete"></span><br>
+                    <strong>Warning:</strong> This will also remove the book from all user libraries.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" style="display: inline;">
+                    <input type="hidden" name="bookId" id="deleteBookId">
+                    <button type="submit" asp-page-handler="DeleteBook" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete Book
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('bookSearch').addEventListener('input', filterBooks);
+        document.getElementById('genreFilter').addEventListener('change', filterBooks);
+        function filterBooks() {
+            const searchTerm = document.getElementById('bookSearch').value.toLowerCase();
+            const selectedGenre = document.getElementById('genreFilter').value.toLowerCase();
+            const tableRows = document.querySelectorAll('#booksTable tbody tr');
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const genre = row.cells[4].textContent.toLowerCase();
+                const matchesSearch = text.includes(searchTerm);
+                const matchesGenre = !selectedGenre || genre.includes(selectedGenre);
+                if (matchesSearch && matchesGenre) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        function confirmDelete(bookId, bookTitle) {
+            document.getElementById('deleteBookId').value = bookId;
+            document.getElementById('bookToDelete').textContent = bookTitle;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+        function viewBookDetails(bookId) {
+            window.location.href = `/Admin/EditBook/${bookId}`;
+        }
+        function editBook(bookId) {
+            window.location.href = `/Admin/EditBook/${bookId}`;
+        }
+    </script>
+}
+@section Styles {
+    <style>
+        .admin-dashboard {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .admin-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            margin-bottom: 2rem;
+        }
+        .admin-card-header {
+            padding: 1.5rem 1.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: none;
+        }
+        .admin-card-header h5 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0;
+        }
+        .admin-card-body {
+            padding: 1.5rem;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.875rem;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .book-cover-small {
+            width: 40px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .no-cover-placeholder {
+            width: 40px;
+            height: 60px;
+            background: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+        .book-title {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .admin-actions .btn {
+            border-radius: 8px;
+        }
+    </style>
+}

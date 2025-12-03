@@ -1,0 +1,166 @@
+@page "/Admin/AddBook"
+@model BookHub.Presentation.Pages.Admin.AddBookModel
+@{
+    ViewData["Title"] = "Add New Book";
+}
+
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="admin-title">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Add New Book
+                    </h1>
+                    <p class="admin-subtitle">Add a new book to the BookHub library</p>
+                </div>
+                <div class="col-auto">
+                    <a href="/Admin/Books" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Books
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="Title" name="Title" asp-for="Title" required maxlength="200">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="Author" class="form-label">Author <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="Author" name="Author" asp-for="Author" required maxlength="100">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="ISBN" class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" id="ISBN" name="ISBN" asp-for="ISBN" maxlength="20">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="Genre" class="form-label">Genre</label>
+                                    <select class="form-select" id="Genre" name="Genre" asp-for="Genre">
+                                        <option value="">Select Genre</option>
+                                        <option value="Fiction">Fiction</option>
+                                        <option value="Non-Fiction">Non-Fiction</option>
+                                        <option value="Mystery">Mystery</option>
+                                        <option value="Thriller">Thriller</option>
+                                        <option value="Romance">Romance</option>
+                                        <option value="Science Fiction">Science Fiction</option>
+                                        <option value="Fantasy">Fantasy</option>
+                                        <option value="Biography">Biography</option>
+                                        <option value="History">History</option>
+                                        <option value="Self-Help">Self-Help</option>
+                                        <option value="Children">Children</option>
+                                        <option value="Young Adult">Young Adult</option>
+                                        <option value="Poetry">Poetry</option>
+                                        <option value="Horror">Horror</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="Description" class="form-label">Description</label>
+                                <textarea class="form-control" id="Description" name="Description" asp-for="Description" rows="5" maxlength="2000"></textarea>
+                                <small class="text-muted">Maximum 2000 characters</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="CoverImage" class="form-label">Book Cover Image</label>
+                                <input type="file" class="form-control" id="CoverImage" name="CoverImage" accept="image/*" onchange="previewImage(event)">
+                                <small class="text-muted">Supported formats: JPG, PNG, GIF, BMP, WEBP (Max 10MB)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Or provide image URL</label>
+                                <input type="url" class="form-control" name="CoverUrl" asp-for="CoverUrl" placeholder="https://example.com/cover.jpg">
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="/Admin/Books" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Book
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cover Preview</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img id="coverPreview" 
+                             src="/images/no-cover.jpg" 
+                             alt="Cover Preview" 
+                             class="img-fluid rounded"
+                             style="max-height: 400px; object-fit: cover;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('coverPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .admin-dashboard {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .admin-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+    </style>
+}

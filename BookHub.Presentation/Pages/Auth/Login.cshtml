@@ -1,0 +1,44 @@
+@page "/Auth/Login"
+@model BookHub.Presentation.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">@ViewData["Title"]</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @Model.ErrorMessage
+                        </div>
+                    }
+                    <form method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email or Username</label>
+                            <input asp-for="Email" type="text" class="form-control" placeholder="Enter email or username" required />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" required />
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a asp-page="/Auth/ResetPassword" class="btn text-muted">Forgot your password?</a>
+                        <br>
+                        <span class="text-muted">Don't have an account? </span>
+                        <a asp-page="/Auth/Register">Register here</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

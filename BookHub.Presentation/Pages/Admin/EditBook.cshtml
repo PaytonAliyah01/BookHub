@@ -1,0 +1,266 @@
+@page "/Admin/EditBook/{bookId:int}"
+@model BookHub.Presentation.Pages.Admin.EditBookModel
+@{
+    ViewData["Title"] = "Edit Book - Admin";
+}
+<div class="admin-dashboard">
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="admin-title">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        Edit Book
+                    </h1>
+                    <p class="admin-subtitle">Update book information</p>
+                </div>
+                <div class="col-auto">
+                    <a href="/Admin/Books" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Books
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @Model.ErrorMessage
+            </div>
+        }
+        @if (Model.Book == null)
+        {
+            <div class="admin-card">
+                <div class="admin-card-body text-center py-5">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">Book Not Found</h5>
+                    <p class="text-muted">The book you're trying to edit doesn't exist.</p>
+                    <a href="/Admin/Books" class="btn btn-primary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Books
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5><i class="bi bi-info-circle me-2"></i>Book Information</h5>
+                        </div>
+                        <div class="admin-card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                <input type="hidden" asp-for="BookId" />
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label asp-for="Book.Title" class="form-label">
+                                            Title <span class="text-danger">*</span>
+                                        </label>
+                                        <input asp-for="Book.Title" class="form-control" required />
+                                        <span asp-validation-for="Book.Title" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Book.Author" class="form-label">
+                                            Author <span class="text-danger">*</span>
+                                        </label>
+                                        <input asp-for="Book.Author" class="form-control" required />
+                                        <span asp-validation-for="Book.Author" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Book.ISBN" class="form-label">ISBN</label>
+                                        <input asp-for="Book.ISBN" class="form-control" />
+                                        <span asp-validation-for="Book.ISBN" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Book.Genre" class="form-label">Genre</label>
+                                        <input asp-for="Book.Genre" class="form-control" />
+                                        <span asp-validation-for="Book.Genre" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Book.CoverUrl" class="form-label">Cover URL</label>
+                                        <input asp-for="Book.CoverUrl" class="form-control" type="url" id="coverUrlInput" />
+                                        <span asp-validation-for="Book.CoverUrl" class="text-danger"></span>
+                                        <small class="form-text text-muted">Enter a URL or upload an image below</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="CoverImageFile" class="form-label">Upload Cover Image</label>
+                                        <input asp-for="CoverImageFile" type="file" class="form-control" accept="image/*" id="coverImageFile" />
+                                        <span asp-validation-for="CoverImageFile" class="text-danger"></span>
+                                        <small class="form-text text-muted">Max 10MB. JPG, PNG, GIF, BMP, WEBP</small>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label asp-for="Book.Description" class="form-label">Description</label>
+                                        <textarea asp-for="Book.Description" class="form-control" rows="5"></textarea>
+                                        <span asp-validation-for="Book.Description" class="text-danger"></span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="/Admin/Books" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5><i class="bi bi-image me-2"></i>Book Cover Preview</h5>
+                        </div>
+                        <div class="admin-card-body text-center">
+                            @if (!string.IsNullOrEmpty(Model.Book.CoverUrl))
+                            {
+                                <img src="@Model.Book.CoverUrl" alt="Book Cover" class="img-fluid rounded mb-3" style="max-height: 400px;" id="coverPreview" onerror="this.src='/images/no-cover.svg'" />
+                            }
+                            else
+                            {
+                                <div class="no-cover-large mb-3" id="coverPreview">
+                                    <i class="bi bi-book"></i>
+                                    <p class="mt-2 text-muted">No Cover</p>
+                                </div>
+                            }
+                            <small class="text-muted">Cover image will update when you change the URL</small>
+                        </div>
+                    </div>
+                    <div class="admin-card mt-3">
+                        <div class="admin-card-header">
+                            <h5><i class="bi bi-info-circle me-2"></i>Book Details</h5>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="mb-2">
+                                <strong>Book ID:</strong>
+                                <span class="badge bg-secondary">#@Model.Book.BookId</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Created:</strong>
+                                <span class="text-muted">@Model.Book.CreatedDate.ToString("MMM dd, yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const coverUrlInput = document.getElementById('coverUrlInput');
+        const coverImageFile = document.getElementById('coverImageFile');
+        const coverPreview = document.getElementById('coverPreview');
+        
+        if (coverUrlInput) {
+            coverUrlInput.addEventListener('input', function() {
+                const url = this.value.trim();
+                if (url) {
+                    updatePreview(url);
+                }
+            });
+        }
+        
+        if (coverImageFile) {
+            coverImageFile.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        updatePreview(event.target.result);
+                        if (coverUrlInput) {
+                            coverUrlInput.value = '';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        function updatePreview(url) {
+            if (coverPreview.tagName === 'IMG') {
+                coverPreview.src = url;
+            } else {
+                const newImg = document.createElement('img');
+                newImg.src = url;
+                newImg.alt = 'Book Cover';
+                newImg.className = 'img-fluid rounded mb-3';
+                newImg.style.maxHeight = '400px';
+                newImg.id = 'coverPreview';
+                newImg.onerror = function() { this.src = '/images/no-cover.svg'; };
+                coverPreview.parentNode.replaceChild(newImg, coverPreview);
+            }
+        }
+    </script>
+}
+@section Styles {
+    <style>
+        .admin-dashboard {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .admin-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: none;
+            margin-bottom: 2rem;
+        }
+        .admin-card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .admin-card-header h5 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0;
+        }
+        .admin-card-body {
+            padding: 1.5rem;
+        }
+        .no-cover-large {
+            width: 100%;
+            height: 300px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 3rem;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .text-danger {
+            font-size: 0.875rem;
+        }
+    </style>
+}
