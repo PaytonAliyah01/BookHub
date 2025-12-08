@@ -24,11 +24,11 @@ namespace BookHub.BLL
                 throw new ApplicationException("Unable to check if user exists. Please try again later.", ex);
             }
         }
-        public bool RegisterUser(string name, string email, string password)
+        public bool RegisterUser(string name, string username, string email, string password, DateTime? dateOfBirth, string? sex)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
                     return false;
                 if (password.Length < 6) 
                     return false;
@@ -36,7 +36,7 @@ namespace BookHub.BLL
                     return false;
                 string salt = GenerateSalt();
                 string hashedPassword = HashPassword(password, salt);
-                _userDAL.RegisterUser(name, email, hashedPassword, salt);
+                _userDAL.RegisterUser(name, username, email, hashedPassword, salt, dateOfBirth, sex);
                 return true;
             }
             catch (InvalidOperationException ex)
@@ -141,21 +141,33 @@ namespace BookHub.BLL
             bool hasSpecial = password.Any(c => !char.IsLetterOrDigit(c));
             return hasUpper && hasLower && hasDigit && hasSpecial;
         }
-        public bool UpdateProfile(string email, string name, string bio, string profileImage)
+        public bool UpdateProfile(string email, string username, string name, string bio, string profileImage, string? location = null, string? favoriteGenres = null, string? favoriteAuthors = null, string? preferredFormat = null, string? favoriteQuote = null)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(name))
+                    return false;
+                if (username.Length < 3 || username.Length > 50)
+                    return false;
+                if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9_]+$"))
                     return false;
                 if (name.Length < 2 || name.Length > 100)
                     return false;
                 if (!string.IsNullOrEmpty(bio) && bio.Length > 500)
                     return false;
+                if (!string.IsNullOrEmpty(location) && location.Length > 100)
+                    return false;
+                if (!string.IsNullOrEmpty(favoriteGenres) && favoriteGenres.Length > 255)
+                    return false;
+                if (!string.IsNullOrEmpty(favoriteAuthors) && favoriteAuthors.Length > 255)
+                    return false;
+                if (!string.IsNullOrEmpty(favoriteQuote) && favoriteQuote.Length > 500)
+                    return false;
                 if (!IsValidImageFile(profileImage))
                     return false;
                 if (!_userDAL.UserExists(email))
                     return false;
-                _userDAL.UpdateProfile(email, name, bio ?? "", profileImage ?? "default.png");
+                _userDAL.UpdateProfile(email, username, name, bio ?? "", profileImage ?? "default.png", location, favoriteGenres, favoriteAuthors, preferredFormat, favoriteQuote);
                 return true;
             }
             catch (InvalidOperationException ex)
@@ -230,9 +242,18 @@ namespace BookHub.BLL
             {
                 UserId = user.UserId,
                 Name = user.Name,
+                Username = user.Username,
                 Email = user.Email,
                 Bio = user.Bio,
-                ProfileImage = user.ProfileImage
+                ProfileImage = user.ProfileImage,
+                DateOfBirth = user.DateOfBirth,
+                Gender = user.Gender,
+                Location = user.Location,
+                FavoriteGenres = user.FavoriteGenres,
+                FavoriteAuthors = user.FavoriteAuthors,
+                PreferredFormat = user.PreferredFormat,
+                FavoriteQuote = user.FavoriteQuote,
+                DateJoined = user.DateJoined
             };
         }
         private User MapFromDto(UserDto userDto)

@@ -45,9 +45,20 @@ namespace BookHub.BLL
     {
         public int UserId { get; set; }
         public string Name { get; set; } = "";
+        public string Username { get; set; } = "";
         public string Email { get; set; } = "";
         public string Bio { get; set; } = "";
         public string ProfileImage { get; set; } = "default.png";
+        public DateTime? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        
+        // New profile fields
+        public string? Location { get; set; }
+        public string? FavoriteGenres { get; set; }
+        public string? FavoriteAuthors { get; set; }
+        public string? PreferredFormat { get; set; }
+        public string? FavoriteQuote { get; set; }
+        public DateTime DateJoined { get; set; }
     }
     public class BookReviewDto
     {

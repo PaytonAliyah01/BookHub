@@ -38,15 +38,91 @@
                                         <img src="~/images/profiles/@Model.UserProfile.ProfileImage" class="profile-picture" alt="Profile Picture" />
                                     }
                                 </div>
+                                
+                                <!-- Reading Statistics Cards -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="stat-card text-center p-2">
+                                            <i class="bi bi-book-fill text-primary fs-4"></i>
+                                            <div class="fw-bold fs-5">@Model.TotalBooksRead</div>
+                                            <small class="text-muted">Books Read</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-card text-center p-2">
+                                            <i class="bi bi-people-fill text-success fs-4"></i>
+                                            <div class="fw-bold fs-5">@Model.BookClubsJoined</div>
+                                            <small class="text-muted">Book Clubs</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-card text-center p-2">
+                                            <i class="bi bi-star-fill text-warning fs-4"></i>
+                                            <div class="fw-bold fs-5">@Model.ReviewsWritten</div>
+                                            <small class="text-muted">Reviews</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-card text-center p-2">
+                                            <i class="bi bi-heart-fill text-danger fs-4"></i>
+                                            <div class="fw-bold fs-5">@Model.FriendsCount</div>
+                                            <small class="text-muted">Friends</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-8">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Name</label>
-                                    <p class="form-control-plaintext">@Model.UserProfile.Name</p>
+                                    <h3 class="mb-1">@@@Model.UserProfile.Username</h3>
+                                    <p class="text-muted">@Model.UserProfile.Name</p>
                                 </div>
+                                <hr class="my-2" />
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Email</label>
                                     <p class="form-control-plaintext">@Model.UserProfile.Email</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Date of Birth</label>
+                                    <p class="form-control-plaintext">
+                                        @if (Model.UserProfile.DateOfBirth.HasValue)
+                                        {
+                                            @Model.UserProfile.DateOfBirth.Value.ToString("MMMM dd, yyyy")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not provided</span>
+                                        }
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Gender</label>
+                                    <p class="form-control-plaintext">
+                                        @if (!string.IsNullOrEmpty(Model.UserProfile.Gender))
+                                        {
+                                            @Model.UserProfile.Gender
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not specified</span>
+                                        }
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="bi bi-geo-alt"></i> Location</label>
+                                    <p class="form-control-plaintext">
+                                        @if (!string.IsNullOrEmpty(Model.UserProfile.Location))
+                                        {
+                                            @Model.UserProfile.Location
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not specified</span>
+                                        }
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="bi bi-calendar-check"></i> Member Since</label>
+                                    <p class="form-control-plaintext">@Model.UserProfile.DateJoined.ToString("MMMM dd, yyyy")</p>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Bio</label>
@@ -63,6 +139,58 @@
                                 </div>
                             </div>
                         </div>
+                        <hr class="my-4" />
+                        <h5 class="mb-3"><i class="bi bi-book-half"></i> Reading Preferences</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-bookmark-star"></i> Favorite Genres</label>
+                                <p class="form-control-plaintext">
+                                    @if (!string.IsNullOrEmpty(Model.UserProfile.FavoriteGenres))
+                                    {
+                                        @Model.UserProfile.FavoriteGenres
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-person-badge"></i> Favorite Authors</label>
+                                <p class="form-control-plaintext">
+                                    @if (!string.IsNullOrEmpty(Model.UserProfile.FavoriteAuthors))
+                                    {
+                                        @Model.UserProfile.FavoriteAuthors
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-journal"></i> Preferred Reading Format</label>
+                                <p class="form-control-plaintext">
+                                    @if (!string.IsNullOrEmpty(Model.UserProfile.PreferredFormat))
+                                    {
+                                        @Model.UserProfile.PreferredFormat
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.UserProfile.FavoriteQuote))
+                        {
+                            <div class="alert alert-light border">
+                                <label class="form-label fw-bold"><i class="bi bi-quote"></i> Favorite Quote</label>
+                                <p class="mb-0 fst-italic">"@Model.UserProfile.FavoriteQuote"</p>
+                            </div>
+                        }
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a asp-page="/Profile/ChangePassword" class="btn btn-outline-secondary me-md-2">
                                 <i class="bi bi-key"></i> Change Password
@@ -106,5 +234,15 @@
     .card-header {
         background-color: #f8f9fa;
         border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 </style>

@@ -50,10 +50,10 @@ namespace BookHub.BLL
         UserDto? GetUserProfile(int userId);
         UserDto? ValidateUser(string email, string password);
         bool UserExists(string email);
-        bool RegisterUser(string name, string email, string password);
+        bool RegisterUser(string name, string username, string email, string password, DateTime? dateOfBirth, string? gender);
         bool ChangePassword(string email, string currentPassword, string newPassword);
         bool ResetPassword(string email, string newPassword);
-        bool UpdateProfile(string email, string name, string bio, string profileImage);
+        bool UpdateProfile(string email, string username, string name, string bio, string profileImage, string? location = null, string? favoriteGenres = null, string? favoriteAuthors = null, string? preferredFormat = null, string? favoriteQuote = null);
         bool IsPasswordStrong(string password);
         string GenerateTemporaryPassword(int length);
         string GenerateProfileImageFileName(string originalFileName, int userId);
@@ -75,6 +75,8 @@ namespace BookHub.BLL
         bool IsUserAdmin(int clubId, int userId);
         List<BookHub.DAL.BookClubMember> GetBookClubMembers(int clubId);
         List<BookHub.DAL.BookClubMember> GetPendingMembers(int clubId, int adminUserId);
+        bool UpdateBookClub(BookHub.DAL.BookClub bookClub);
+        bool DeleteBookClub(int clubId, int ownerId);
     }
     public interface IForumBLL
     {

@@ -5,6 +5,7 @@ using BookHub.BLL;
 using System.Security.Claims;
 namespace BookHub.Presentation.Pages
 {
+    [IgnoreAntiforgeryToken]
     public class BooksModel : PageModel
     {
         private readonly IBookBLL _bookBLL;
@@ -28,7 +29,8 @@ namespace BookHub.Presentation.Pages
             LoadBooks();
             LoadReadingGoal();
         }
-        public IActionResult OnPostAddToBookshelf(int bookId, string ownershipType = "Physical")
+        
+        public IActionResult OnPostAddBookToShelf(int bookId, string ownershipType = "Physical")
         {
             try
             {

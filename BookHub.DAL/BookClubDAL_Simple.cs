@@ -528,6 +528,58 @@ namespace BookHub.DAL
                 return false;
             }
         }
+
+        public bool UpdateBookClub(BookClub bookClub)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+
+                var cmd = new SqlCommand(@"
+                    UPDATE BookClubs 
+                    SET Name = @Name, 
+                        Description = @Description, 
+                        Genre = @Genre, 
+                        MeetingSchedule = @MeetingSchedule, 
+                        MaxMembers = @MaxMembers
+                    WHERE ClubId = @ClubId", conn);
+
+                cmd.Parameters.AddWithValue("@ClubId", bookClub.ClubId);
+                cmd.Parameters.AddWithValue("@Name", bookClub.Name);
+                cmd.Parameters.AddWithValue("@Description", bookClub.Description ?? "");
+                cmd.Parameters.AddWithValue("@Genre", bookClub.Genre ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@MeetingSchedule", bookClub.MeetingSchedule ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@MaxMembers", bookClub.MaxMembers);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error updating book club: {ex.Message}", ex);
+            }
+        }
+
+        public bool DeleteBookClub(int clubId)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+
+                var cmd = new SqlCommand(@"DELETE FROM BookClubs WHERE ClubId = @ClubId", conn);
+                cmd.Parameters.AddWithValue("@ClubId", clubId);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error deleting book club: {ex.Message}", ex);
+            }
+        }
+
     #region Forum Methods
     public List<DiscussionPost> GetDiscussionPosts(int clubId, int skip = 0, int take = 20)
     {
@@ -537,12 +589,13 @@ namespace BookHub.DAL
             conn.Open();
             var posts = new List<DiscussionPost>();
             var cmd = new SqlCommand(@"
-                SELECT p.PostId, p.ClubId, p.UserId, p.Title, p.Content, p.CreatedDate, 
-                       p.UpdatedDate, p.IsSticky, p.ReplyCount, u.Name as UserName
-                FROM DiscussionPosts p
-                INNER JOIN Users u ON p.UserId = u.UserId
-                WHERE p.ClubId = @ClubId
-                ORDER BY p.IsSticky DESC, p.UpdatedDate DESC
+                SELECT d.DiscussionId, d.BookClubId, d.UserId, d.Message, d.PostedDate, 
+                       u.Name as UserName,
+                       (SELECT COUNT(*) FROM BookClubDiscussions WHERE ReplyToId = d.DiscussionId) as ReplyCount
+                FROM BookClubDiscussions d
+                INNER JOIN Users u ON d.UserId = u.UserId
+                WHERE d.BookClubId = @ClubId AND d.ReplyToId IS NULL
+                ORDER BY d.PostedDate DESC
                 OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY", conn);
             cmd.Parameters.AddWithValue("@ClubId", clubId);
             cmd.Parameters.AddWithValue("@Skip", skip);
@@ -555,13 +608,13 @@ namespace BookHub.DAL
                     PostId = reader.GetInt32(0),
                     ClubId = reader.GetInt32(1),
                     UserId = reader.GetInt32(2),
-                    Title = reader.GetString(3),
-                    Content = reader.GetString(4),
-                    CreatedDate = reader.GetDateTime(5),
-                    UpdatedDate = reader.GetDateTime(6),
-                    IsSticky = reader.GetBoolean(7),
-                    ReplyCount = reader.GetInt32(8),
-                    User = new User { Name = reader.GetString(9) }
+                    Title = "Discussion",
+                    Content = reader.GetString(3),
+                    CreatedDate = reader.GetDateTime(4),
+                    UpdatedDate = reader.GetDateTime(4),
+                    IsSticky = false,
+                    ReplyCount = reader.GetInt32(6),
+                    User = new User { Name = reader.GetString(5) }
                 };
                 posts.Add(post);
             }
@@ -579,11 +632,11 @@ namespace BookHub.DAL
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
             var postCmd = new SqlCommand(@"
-                SELECT p.PostId, p.ClubId, p.UserId, p.Title, p.Content, p.CreatedDate, 
-                       p.UpdatedDate, p.IsSticky, p.ReplyCount, u.Name as UserName
-                FROM DiscussionPosts p
-                INNER JOIN Users u ON p.UserId = u.UserId
-                WHERE p.PostId = @PostId", conn);
+                SELECT d.DiscussionId, d.BookClubId, d.UserId, d.Message, d.PostedDate, 
+                       u.Name as UserName
+                FROM BookClubDiscussions d
+                INNER JOIN Users u ON d.UserId = u.UserId
+                WHERE d.DiscussionId = @PostId", conn);
             postCmd.Parameters.AddWithValue("@PostId", postId);
             DiscussionPost? post = null;
             using var reader = postCmd.ExecuteReader();
@@ -594,24 +647,23 @@ namespace BookHub.DAL
                     PostId = reader.GetInt32(0),
                     ClubId = reader.GetInt32(1),
                     UserId = reader.GetInt32(2),
-                    Title = reader.GetString(3),
-                    Content = reader.GetString(4),
-                    CreatedDate = reader.GetDateTime(5),
-                    UpdatedDate = reader.GetDateTime(6),
-                    IsSticky = reader.GetBoolean(7),
-                    ReplyCount = reader.GetInt32(8),
-                    User = new User { Name = reader.GetString(9) }
+                    Title = "Discussion",
+                    Content = reader.GetString(3),
+                    CreatedDate = reader.GetDateTime(4),
+                    UpdatedDate = reader.GetDateTime(4),
+                    IsSticky = false,
+                    ReplyCount = 0,
+                    User = new User { Name = reader.GetString(5) }
                 };
             }
             reader.Close();
             if (post == null) return null;
             var repliesCmd = new SqlCommand(@"
-                SELECT r.ReplyId, r.PostId, r.UserId, r.Content, r.CreatedDate, 
-                       r.UpdatedDate, u.Name as UserName
-                FROM DiscussionReplies r
-                INNER JOIN Users u ON r.UserId = u.UserId
-                WHERE r.PostId = @PostId
-                ORDER BY r.CreatedDate ASC", conn);
+                SELECT d.DiscussionId, d.UserId, d.Message, d.PostedDate, u.Name as UserName
+                FROM BookClubDiscussions d
+                INNER JOIN Users u ON d.UserId = u.UserId
+                WHERE d.ReplyToId = @PostId
+                ORDER BY d.PostedDate ASC", conn);
             repliesCmd.Parameters.AddWithValue("@PostId", postId);
             using var repliesReader = repliesCmd.ExecuteReader();
             while (repliesReader.Read())
@@ -619,15 +671,16 @@ namespace BookHub.DAL
                 var reply = new DiscussionReply
                 {
                     ReplyId = repliesReader.GetInt32(0),
-                    PostId = repliesReader.GetInt32(1),
-                    UserId = repliesReader.GetInt32(2),
-                    Content = repliesReader.GetString(3),
-                    CreatedDate = repliesReader.GetDateTime(4),
-                    UpdatedDate = repliesReader.GetDateTime(5),
-                    User = new User { Name = repliesReader.GetString(6) }
+                    PostId = postId,
+                    UserId = repliesReader.GetInt32(1),
+                    Content = repliesReader.GetString(2),
+                    CreatedDate = repliesReader.GetDateTime(3),
+                    UpdatedDate = repliesReader.GetDateTime(3),
+                    User = new User { Name = repliesReader.GetString(4) }
                 };
                 post.Replies.Add(reply);
             }
+            post.ReplyCount = post.Replies.Count;
             return post;
         }
         catch (Exception ex)
@@ -641,42 +694,16 @@ namespace BookHub.DAL
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
-            using var transaction = conn.BeginTransaction();
-            try
-            {
-                var cmd = new SqlCommand(@"
-                    INSERT INTO DiscussionPosts (ClubId, UserId, Title, Content, CreatedDate, UpdatedDate, IsSticky)
-                    VALUES (@ClubId, @UserId, @Title, @Content, @CreatedDate, @UpdatedDate, @IsSticky);
-                    SELECT SCOPE_IDENTITY();", conn, transaction);
-                cmd.Parameters.AddWithValue("@ClubId", post.ClubId);
-                cmd.Parameters.AddWithValue("@UserId", post.UserId);
-                cmd.Parameters.AddWithValue("@Title", post.Title);
-                cmd.Parameters.AddWithValue("@Content", post.Content);
-                cmd.Parameters.AddWithValue("@CreatedDate", post.CreatedDate);
-                cmd.Parameters.AddWithValue("@UpdatedDate", post.UpdatedDate);
-                cmd.Parameters.AddWithValue("@IsSticky", post.IsSticky);
-                int postId = Convert.ToInt32(cmd.ExecuteScalar());
-                foreach (var attachment in post.Attachments)
-                {
-                    var attachCmd = new SqlCommand(@"
-                        INSERT INTO PostAttachments (PostId, FileName, FileType, FilePath, FileSize, UploadedDate)
-                        VALUES (@PostId, @FileName, @FileType, @FilePath, @FileSize, @UploadedDate)", conn, transaction);
-                    attachCmd.Parameters.AddWithValue("@PostId", postId);
-                    attachCmd.Parameters.AddWithValue("@FileName", attachment.FileName);
-                    attachCmd.Parameters.AddWithValue("@FileType", attachment.FileType);
-                    attachCmd.Parameters.AddWithValue("@FilePath", attachment.FilePath);
-                    attachCmd.Parameters.AddWithValue("@FileSize", attachment.FileSize);
-                    attachCmd.Parameters.AddWithValue("@UploadedDate", attachment.UploadedDate);
-                    attachCmd.ExecuteNonQuery();
-                }
-                transaction.Commit();
-                return postId;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
+            var cmd = new SqlCommand(@"
+                INSERT INTO BookClubDiscussions (BookClubId, UserId, Message, PostedDate, ReplyToId)
+                VALUES (@BookClubId, @UserId, @Message, @PostedDate, NULL);
+                SELECT SCOPE_IDENTITY();", conn);
+            cmd.Parameters.AddWithValue("@BookClubId", post.ClubId);
+            cmd.Parameters.AddWithValue("@UserId", post.UserId);
+            cmd.Parameters.AddWithValue("@Message", post.Content);
+            cmd.Parameters.AddWithValue("@PostedDate", post.CreatedDate);
+            int postId = Convert.ToInt32(cmd.ExecuteScalar());
+            return postId;
         }
         catch (Exception ex)
         {
@@ -689,47 +716,18 @@ namespace BookHub.DAL
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
-            using var transaction = conn.BeginTransaction();
-            try
-            {
-                var cmd = new SqlCommand(@"
-                    INSERT INTO DiscussionReplies (PostId, UserId, Content, CreatedDate, UpdatedDate)
-                    VALUES (@PostId, @UserId, @Content, @CreatedDate, @UpdatedDate);
-                    SELECT SCOPE_IDENTITY();", conn, transaction);
-                cmd.Parameters.AddWithValue("@PostId", reply.PostId);
-                cmd.Parameters.AddWithValue("@UserId", reply.UserId);
-                cmd.Parameters.AddWithValue("@Content", reply.Content);
-                cmd.Parameters.AddWithValue("@CreatedDate", reply.CreatedDate);
-                cmd.Parameters.AddWithValue("@UpdatedDate", reply.UpdatedDate);
-                int replyId = Convert.ToInt32(cmd.ExecuteScalar());
-                foreach (var attachment in reply.Attachments)
-                {
-                    var attachCmd = new SqlCommand(@"
-                        INSERT INTO PostAttachments (ReplyId, FileName, FileType, FilePath, FileSize, UploadedDate)
-                        VALUES (@ReplyId, @FileName, @FileType, @FilePath, @FileSize, @UploadedDate)", conn, transaction);
-                    attachCmd.Parameters.AddWithValue("@ReplyId", replyId);
-                    attachCmd.Parameters.AddWithValue("@FileName", attachment.FileName);
-                    attachCmd.Parameters.AddWithValue("@FileType", attachment.FileType);
-                    attachCmd.Parameters.AddWithValue("@FilePath", attachment.FilePath);
-                    attachCmd.Parameters.AddWithValue("@FileSize", attachment.FileSize);
-                    attachCmd.Parameters.AddWithValue("@UploadedDate", attachment.UploadedDate);
-                    attachCmd.ExecuteNonQuery();
-                }
-                var updateCmd = new SqlCommand(@"
-                    UPDATE DiscussionPosts 
-                    SET ReplyCount = ReplyCount + 1, UpdatedDate = @UpdatedDate
-                    WHERE PostId = @PostId", conn, transaction);
-                updateCmd.Parameters.AddWithValue("@PostId", reply.PostId);
-                updateCmd.Parameters.AddWithValue("@UpdatedDate", DateTime.Now);
-                updateCmd.ExecuteNonQuery();
-                transaction.Commit();
-                return replyId;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
+            var cmd = new SqlCommand(@"
+                INSERT INTO BookClubDiscussions (BookClubId, UserId, Message, PostedDate, ReplyToId)
+                SELECT BookClubId, @UserId, @Message, @PostedDate, @ReplyToId
+                FROM BookClubDiscussions
+                WHERE DiscussionId = @ReplyToId;
+                SELECT SCOPE_IDENTITY();", conn);
+            cmd.Parameters.AddWithValue("@UserId", reply.UserId);
+            cmd.Parameters.AddWithValue("@Message", reply.Content);
+            cmd.Parameters.AddWithValue("@PostedDate", reply.CreatedDate);
+            cmd.Parameters.AddWithValue("@ReplyToId", reply.PostId);
+            int replyId = Convert.ToInt32(cmd.ExecuteScalar());
+            return replyId;
         }
         catch (Exception ex)
         {

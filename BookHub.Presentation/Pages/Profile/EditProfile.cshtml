@@ -54,6 +54,13 @@
                             </div>
                             <div class="col-md-8">
                                 <div class="mb-3">
+                                    <label asp-for="Username" class="form-label">Username</label>
+                                    <input asp-for="Username" type="text" class="form-control" required maxlength="50" pattern="[a-zA-Z0-9_]+" title="Username can only contain letters, numbers, and underscores">
+                                    <small class="form-text text-muted">
+                                        3-50 characters, letters, numbers, and underscores only
+                                    </small>
+                                </div>
+                                <div class="mb-3">
                                     <label asp-for="Name" class="form-label">Full Name</label>
                                     <input asp-for="Name" type="text" class="form-control" required maxlength="100">
                                     <small class="form-text text-muted">
@@ -67,7 +74,57 @@
                                         <span id="bioCount">@(Model.Bio?.Length ?? 0)</span>/500 characters
                                     </small>
                                 </div>
+                                <div class="mb-3">
+                                    <label asp-for="Location" class="form-label"><i class="bi bi-geo-alt"></i> Location</label>
+                                    <input asp-for="Location" type="text" class="form-control" maxlength="100" placeholder="City, Country">
+                                    <small class="form-text text-muted">
+                                        Optional: Where are you from?
+                                    </small>
+                                </div>
                             </div>
+                        </div>
+                        <hr class="my-4" />
+                        <h5 class="mb-3"><i class="bi bi-book-half"></i> Reading Preferences</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="FavoriteGenres" class="form-label"><i class="bi bi-bookmark-star"></i> Favorite Genres</label>
+                                    <input asp-for="FavoriteGenres" type="text" class="form-control" maxlength="255" placeholder="Fiction, Mystery, Fantasy...">
+                                    <small class="form-text text-muted">
+                                        Comma-separated list
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="FavoriteAuthors" class="form-label"><i class="bi bi-person-badge"></i> Favorite Authors</label>
+                                    <input asp-for="FavoriteAuthors" type="text" class="form-control" maxlength="255" placeholder="Author names...">
+                                    <small class="form-text text-muted">
+                                        Comma-separated list
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="PreferredFormat" class="form-label"><i class="bi bi-journal"></i> Preferred Reading Format</label>
+                                    <select asp-for="PreferredFormat" class="form-select">
+                                        <option value="">Select format...</option>
+                                        <option value="Physical">Physical Books</option>
+                                        <option value="eBook">eBooks</option>
+                                        <option value="Audiobook">Audiobooks</option>
+                                        <option value="Mixed">Mixed/No Preference</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="FavoriteQuote" class="form-label"><i class="bi bi-quote"></i> Favorite Quote</label>
+                            <textarea asp-for="FavoriteQuote" class="form-control" rows="3" maxlength="500" placeholder="Share a quote that inspires you..."></textarea>
+                            <small class="form-text text-muted">
+                                <span id="quoteCount">@(Model.FavoriteQuote?.Length ?? 0)</span>/500 characters
+                            </small>
                         </div>
                         <input asp-for="CurrentProfileImage" type="hidden" />
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -124,6 +181,21 @@
                     bioCount.style.color = '#fd7e14';
                 } else {
                     bioCount.style.color = '#6c757d';
+                }
+            });
+        }
+
+        const quoteTextarea = document.querySelector('textarea[name="FavoriteQuote"]');
+        const quoteCount = document.getElementById('quoteCount');
+        if (quoteTextarea && quoteCount) {
+            quoteTextarea.addEventListener('input', function() {
+                quoteCount.textContent = this.value.length;
+                if (this.value.length > 450) {
+                    quoteCount.style.color = '#dc3545';
+                } else if (this.value.length > 400) {
+                    quoteCount.style.color = '#fd7e14';
+                } else {
+                    quoteCount.style.color = '#6c757d';
                 }
             });
         }

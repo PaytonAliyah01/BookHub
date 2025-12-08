@@ -11,14 +11,14 @@
             <i class="bi bi-exclamation-triangle me-2"></i>
             Forum thread not found.
         </div>
-        <a href="/Community/Forum" class="btn btn-primary">
-            <i class="bi bi-arrow-left me-2"></i>Back to Forum
+        <a href="/Community/BookClubs" class="btn btn-primary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Book Clubs
         </a>
     }
     else
     {
         <div class="mb-3">
-            <a href="/Community/Forum" class="btn btn-outline-secondary btn-sm">
+            <a href="/Community/Forum?clubId=@Model.Post.ClubId" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-2"></i>Back to Forum
             </a>
         </div>

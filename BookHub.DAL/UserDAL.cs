@@ -33,24 +33,29 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"An error occurred while checking user existence: {ex.Message}", ex);
             }
         }
-        public void RegisterUser(string name, string email, string hashedPassword, string salt)
+        public void RegisterUser(string name, string username, string email, string hashedPassword, string salt, DateTime? dateOfBirth, string? gender)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || 
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || 
                     string.IsNullOrWhiteSpace(hashedPassword) || string.IsNullOrWhiteSpace(salt))
                 {
-                    throw new ArgumentException("All parameters must be provided and cannot be empty.");
+                    throw new ArgumentException("All required parameters must be provided and cannot be empty.");
                 }
                 using var conn = new SqlConnection(_connectionString);
                 var cmd = new SqlCommand(
-                    "INSERT INTO Users (Name, Email, PasswordHash, Salt) VALUES (@Name, @Email, @PasswordHash, @Salt)", 
+                    "INSERT INTO Users (Name, Username, Email, PasswordHash, Salt, Bio, ProfileImage, DateOfBirth, Sex, DateJoined) VALUES (@Name, @Username, @Email, @PasswordHash, @Salt, @Bio, @ProfileImage, @DateOfBirth, @Gender, GETDATE())", 
                     conn
                 );
                 cmd.Parameters.AddWithValue("@Name", name);
+                cmd.Parameters.AddWithValue("@Username", username);
                 cmd.Parameters.AddWithValue("@Email", email);
                 cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
                 cmd.Parameters.AddWithValue("@Salt", salt);
+                cmd.Parameters.AddWithValue("@Bio", "");
+                cmd.Parameters.AddWithValue("@ProfileImage", "default.png");
+                cmd.Parameters.AddWithValue("@DateOfBirth", (object?)dateOfBirth ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Gender", (object?)gender ?? DBNull.Value);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
@@ -78,7 +83,7 @@ namespace BookHub.DAL
                 if (string.IsNullOrWhiteSpace(email))
                     return null;
                 using var conn = new SqlConnection(_connectionString);
-                var cmd = new SqlCommand("SELECT UserId, Name, Email, Bio, ProfileImage FROM Users WHERE Email=@Email", conn);
+                var cmd = new SqlCommand("SELECT UserId, Name, Username, Email, Bio, ProfileImage, DateOfBirth, Sex, Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote, DateJoined FROM Users WHERE Email=@Email", conn);
                 cmd.Parameters.AddWithValue("@Email", email);
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
@@ -87,9 +92,18 @@ namespace BookHub.DAL
                 {
                     UserId = (int)reader["UserId"],
                     Name = reader["Name"]?.ToString() ?? "",
+                    Username = reader["Username"]?.ToString() ?? "",
                     Email = reader["Email"]?.ToString() ?? "",
                     Bio = reader["Bio"]?.ToString() ?? "",
-                    ProfileImage = reader["ProfileImage"]?.ToString() ?? "default.png"
+                    ProfileImage = reader["ProfileImage"]?.ToString() ?? "default.png",
+                    DateOfBirth = reader["DateOfBirth"] as DateTime?,
+                    Gender = reader["Sex"]?.ToString(),
+                    Location = reader["Location"]?.ToString(),
+                    FavoriteGenres = reader["FavoriteGenres"]?.ToString(),
+                    FavoriteAuthors = reader["FavoriteAuthors"]?.ToString(),
+                    PreferredFormat = reader["PreferredFormat"]?.ToString(),
+                    FavoriteQuote = reader["FavoriteQuote"]?.ToString(),
+                    DateJoined = reader["DateJoined"] != DBNull.Value ? (DateTime)reader["DateJoined"] : DateTime.Now
                 };
             }
             catch (SqlException ex)
@@ -179,21 +193,36 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"An error occurred while retrieving user ID: {ex.Message}", ex);
             }
         }
-        public void UpdateProfile(string email, string name, string bio, string profileImage)
+        public void UpdateProfile(string email, string username, string name, string bio, string profileImage, string? location = null, string? favoriteGenres = null, string? favoriteAuthors = null, string? preferredFormat = null, string? favoriteQuote = null)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(name))
                 {
-                    throw new ArgumentException("Email and name are required fields.");
+                    throw new ArgumentException("Email, username, and name are required fields.");
                 }
                 using var conn = new SqlConnection(_connectionString);
                 var cmd = new SqlCommand(@"
                     UPDATE Users 
-                    SET Name = @Name, ProfileImage = @ProfileImage 
+                    SET Username = @Username,
+                        Name = @Name, 
+                        Bio = @Bio,
+                        ProfileImage = @ProfileImage,
+                        Location = @Location,
+                        FavoriteGenres = @FavoriteGenres,
+                        FavoriteAuthors = @FavoriteAuthors,
+                        PreferredFormat = @PreferredFormat,
+                        FavoriteQuote = @FavoriteQuote
                     WHERE Email = @Email", conn);
+                cmd.Parameters.AddWithValue("@Username", username);
                 cmd.Parameters.AddWithValue("@Name", name);
+                cmd.Parameters.AddWithValue("@Bio", bio ?? "");
                 cmd.Parameters.AddWithValue("@ProfileImage", profileImage ?? "default.png");
+                cmd.Parameters.AddWithValue("@Location", (object?)location ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@FavoriteGenres", (object?)favoriteGenres ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@FavoriteAuthors", (object?)favoriteAuthors ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@PreferredFormat", (object?)preferredFormat ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@FavoriteQuote", (object?)favoriteQuote ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@Email", email);
                 conn.Open();
                 int rowsAffected = cmd.ExecuteNonQuery();
@@ -222,7 +251,7 @@ namespace BookHub.DAL
                 if (userId <= 0)
                     return null;
                 using var conn = new SqlConnection(_connectionString);
-                var cmd = new SqlCommand("SELECT UserId, Name, Email, Bio, ProfileImage FROM Users WHERE UserId = @UserId", conn);
+                var cmd = new SqlCommand("SELECT UserId, Name, Username, Email, Bio, ProfileImage, DateOfBirth, Sex, Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote, DateJoined FROM Users WHERE UserId = @UserId", conn);
                 cmd.Parameters.AddWithValue("@UserId", userId);
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
@@ -231,9 +260,18 @@ namespace BookHub.DAL
                 {
                     UserId = (int)reader["UserId"],
                     Name = reader["Name"]?.ToString() ?? "",
+                    Username = reader["Username"]?.ToString() ?? "",
                     Email = reader["Email"]?.ToString() ?? "",
                     Bio = reader["Bio"]?.ToString() ?? "",
-                    ProfileImage = reader["ProfileImage"]?.ToString() ?? "default.png"
+                    ProfileImage = reader["ProfileImage"]?.ToString() ?? "default.png",
+                    DateOfBirth = reader["DateOfBirth"] as DateTime?,
+                    Gender = reader["Sex"]?.ToString(),
+                    Location = reader["Location"]?.ToString(),
+                    FavoriteGenres = reader["FavoriteGenres"]?.ToString(),
+                    FavoriteAuthors = reader["FavoriteAuthors"]?.ToString(),
+                    PreferredFormat = reader["PreferredFormat"]?.ToString(),
+                    FavoriteQuote = reader["FavoriteQuote"]?.ToString(),
+                    DateJoined = reader["DateJoined"] != DBNull.Value ? (DateTime)reader["DateJoined"] : DateTime.Now
                 };
             }
             catch (SqlException ex)

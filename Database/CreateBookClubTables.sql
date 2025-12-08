@@ -5,7 +5,7 @@ BEGIN
         BookClubId INT IDENTITY(1,1) PRIMARY KEY,
         Name NVARCHAR(100) NOT NULL,
         Description NVARCHAR(500),
-        CreatorUserId INT NOT NULL,
+        OwnerId INT NOT NULL,
         CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
         CurrentBookId INT NULL,
         CurrentBookStartDate DATETIME NULL,
@@ -15,11 +15,11 @@ BEGIN
         MeetingSchedule NVARCHAR(200) NULL,
         Genre NVARCHAR(100) NULL,
         IsActive BIT NOT NULL DEFAULT 1,
-        FOREIGN KEY (CreatorUserId) REFERENCES Users(UserId),
+        FOREIGN KEY (OwnerId) REFERENCES Users(UserId),
         FOREIGN KEY (CurrentBookId) REFERENCES Books(BookId)
     );
     
-    CREATE INDEX IX_BookClubs_CreatorUserId ON BookClubs(CreatorUserId);
+    CREATE INDEX IX_BookClubs_OwnerId ON BookClubs(OwnerId);
     CREATE INDEX IX_BookClubs_IsActive ON BookClubs(IsActive);
     CREATE INDEX IX_BookClubs_Genre ON BookClubs(Genre);
 END

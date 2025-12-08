@@ -29,6 +29,7 @@ namespace BookHub.Presentation.Pages
                 if (userId == 0)
                 {
                     UserBooks = new List<UserBookshelf>();
+                    TempData["ErrorMessage"] = "Unable to retrieve user information. Please log in again.";
                     return;
                 }
                 CurrentFilter = filter;
@@ -44,10 +45,11 @@ namespace BookHub.Presentation.Pages
                 StatusStats = _userBookshelfBLL.GetUserBookshelfStats(userId);
                 GenreStats = _userBookshelfBLL.GetUserGenreStats(userId);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 UserBooks = new List<UserBookshelf>();
                 TotalBooks = 0;
+                TempData["ErrorMessage"] = $"An error occurred while loading your bookshelf: {ex.Message}";
             }
         }
         public IActionResult OnPostUpdateStatus(int bookId, string newStatus)

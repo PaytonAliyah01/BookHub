@@ -316,7 +316,7 @@
             <h3 class="text-muted">No Reviews Found</h3>
             @if (Model.ShowMyReviews)
             {
-                <p class="text-muted">You haven't written any reviews yet. <a href="/Books">Browse books</a> and share your thoughts!</p>
+                <p class="text-muted">You haven't written any reviews yet. <a href="/Books/Books">Browse books</a> and share your thoughts!</p>
             }
             else if (!string.IsNullOrEmpty(Model.SearchQuery) || Model.FilterRating.HasValue || !string.IsNullOrEmpty(Model.FilterGenre))
             {
@@ -324,7 +324,7 @@
             }
             else
             {
-                <p class="text-muted">No reviews have been written yet. <a href="/Books">Browse books</a> and be the first to write a review!</p>
+                <p class="text-muted">No reviews have been written yet. <a href="/Books/Books">Browse books</a> and be the first to write a review!</p>
             }
         </div>
     }

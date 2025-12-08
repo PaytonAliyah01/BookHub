@@ -321,5 +321,63 @@ namespace BookHub.BLL
                 return false;
             }
         }
+
+        public bool UpdateBookClub(BookClub bookClub)
+        {
+            try
+            {
+                if (bookClub.ClubId <= 0)
+                    throw new ArgumentException("Invalid book club ID.");
+
+                if (string.IsNullOrWhiteSpace(bookClub.Name))
+                    throw new ArgumentException("Book club name is required.");
+
+                if (bookClub.Name.Length > 100)
+                    throw new ArgumentException("Book club name cannot exceed 100 characters.");
+
+                if (!string.IsNullOrEmpty(bookClub.Description) && bookClub.Description.Length > 500)
+                    throw new ArgumentException("Description cannot exceed 500 characters.");
+
+                if (bookClub.MaxMembers < 2 || bookClub.MaxMembers > 1000)
+                    throw new ArgumentException("Maximum members must be between 2 and 1000.");
+
+                if (!string.IsNullOrEmpty(bookClub.MeetingSchedule) && bookClub.MeetingSchedule.Length > 200)
+                    throw new ArgumentException("Meeting schedule cannot exceed 200 characters.");
+
+                if (!string.IsNullOrEmpty(bookClub.Genre) && bookClub.Genre.Length > 100)
+                    throw new ArgumentException("Genre cannot exceed 100 characters.");
+
+                return _bookClubDAL.UpdateBookClub(bookClub);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error updating book club: {ex.Message}", ex);
+            }
+        }
+
+        public bool DeleteBookClub(int clubId, int ownerId)
+        {
+            try
+            {
+                if (clubId <= 0)
+                    throw new ArgumentException("Invalid book club ID.");
+
+                if (ownerId <= 0)
+                    throw new ArgumentException("Invalid owner ID.");
+
+                var bookClub = _bookClubDAL.GetBookClubById(clubId);
+                if (bookClub == null)
+                    throw new InvalidOperationException("Book club not found.");
+
+                if (bookClub.OwnerId != ownerId)
+                    throw new UnauthorizedAccessException("Only the owner can delete this book club.");
+
+                return _bookClubDAL.DeleteBookClub(clubId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error deleting book club: {ex.Message}", ex);
+            }
+        }
     }
 }

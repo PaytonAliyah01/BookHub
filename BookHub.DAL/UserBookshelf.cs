@@ -7,6 +7,7 @@ namespace BookHub.DAL
         public int BookId { get; set; }
         public DateTime DateAdded { get; set; } = DateTime.Now;
         public string Status { get; set; } = "Want to Read";
+        public bool IsFavorite { get; set; } = false;
         public bool IsOwned { get; set; } = true;
         public string OwnershipType { get; set; } = "Physical";
         public int? Rating { get; set; }

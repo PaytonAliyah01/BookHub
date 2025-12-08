@@ -16,6 +16,8 @@ namespace BookHub.Presentation.Pages
             _environment = environment;
         }
         [BindProperty]
+        public string Username { get; set; } = "";
+        [BindProperty]
         public string Name { get; set; } = "";
         [BindProperty]
         public string Bio { get; set; } = "";
@@ -23,6 +25,19 @@ namespace BookHub.Presentation.Pages
         public string CurrentProfileImage { get; set; } = "default.png";
         [BindProperty]
         public IFormFile? ProfileImageFile { get; set; }
+        
+        // New profile fields
+        [BindProperty]
+        public string? Location { get; set; }
+        [BindProperty]
+        public string? FavoriteGenres { get; set; }
+        [BindProperty]
+        public string? FavoriteAuthors { get; set; }
+        [BindProperty]
+        public string? PreferredFormat { get; set; }
+        [BindProperty]
+        public string? FavoriteQuote { get; set; }
+        
         public string? ErrorMessage { get; set; }
         public string? SuccessMessage { get; set; }
         public IActionResult OnGet()
@@ -40,9 +55,15 @@ namespace BookHub.Presentation.Pages
                     ErrorMessage = "Unable to load user profile.";
                     return Page();
                 }
+                Username = userProfile.Username;
                 Name = userProfile.Name;
                 Bio = userProfile.Bio;
                 CurrentProfileImage = userProfile.ProfileImage;
+                Location = userProfile.Location;
+                FavoriteGenres = userProfile.FavoriteGenres;
+                FavoriteAuthors = userProfile.FavoriteAuthors;
+                PreferredFormat = userProfile.PreferredFormat;
+                FavoriteQuote = userProfile.FavoriteQuote;
                 return Page();
             }
             catch (ApplicationException ex)
@@ -75,11 +96,49 @@ namespace BookHub.Presentation.Pages
                     ErrorMessage = "Name must be between 2 and 100 characters.";
                     return Page();
                 }
+                if (string.IsNullOrWhiteSpace(Username))
+                {
+                    ErrorMessage = "Username is required.";
+                    return Page();
+                }
+                if (Username.Length < 3 || Username.Length > 50)
+                {
+                    ErrorMessage = "Username must be between 3 and 50 characters.";
+                    return Page();
+                }
+                if (!System.Text.RegularExpressions.Regex.IsMatch(Username, @"^[a-zA-Z0-9_]+$"))
+                {
+                    ErrorMessage = "Username can only contain letters, numbers, and underscores.";
+                    return Page();
+                }
                 if (!string.IsNullOrEmpty(Bio) && Bio.Length > 500)
                 {
                     ErrorMessage = "Bio cannot exceed 500 characters.";
                     return Page();
                 }
+                
+                // Validate new profile fields
+                if (!string.IsNullOrEmpty(Location) && Location.Length > 100)
+                {
+                    ErrorMessage = "Location cannot exceed 100 characters.";
+                    return Page();
+                }
+                if (!string.IsNullOrEmpty(FavoriteGenres) && FavoriteGenres.Length > 255)
+                {
+                    ErrorMessage = "Favorite genres cannot exceed 255 characters.";
+                    return Page();
+                }
+                if (!string.IsNullOrEmpty(FavoriteAuthors) && FavoriteAuthors.Length > 255)
+                {
+                    ErrorMessage = "Favorite authors cannot exceed 255 characters.";
+                    return Page();
+                }
+                if (!string.IsNullOrEmpty(FavoriteQuote) && FavoriteQuote.Length > 500)
+                {
+                    ErrorMessage = "Favorite quote cannot exceed 500 characters.";
+                    return Page();
+                }
+                
                 string profileImageFileName = CurrentProfileImage;
                 if (ProfileImageFile != null && ProfileImageFile.Length > 0)
                 {
@@ -120,7 +179,7 @@ namespace BookHub.Presentation.Pages
                         }
                     }
                 }
-                if (_userBLL.UpdateProfile(email, Name, Bio, profileImageFileName))
+                if (_userBLL.UpdateProfile(email, Username, Name, Bio, profileImageFileName, Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote))
                 {
                     SuccessMessage = "Profile updated successfully!";
                     CurrentProfileImage = profileImageFileName;

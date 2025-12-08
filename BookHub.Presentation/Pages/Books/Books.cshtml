@@ -1,4 +1,4 @@
-@page "/Books"
+@page
 @model BookHub.Presentation.Pages.BooksModel
 @{
     ViewData["Title"] = "Browse Books";
@@ -372,15 +372,21 @@
             const originalHTML = buttonElement.innerHTML;
             buttonElement.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Adding...';
             buttonElement.disabled = true;
+            
             const formData = new FormData();
             formData.append('bookId', bookId);
             const token = document.querySelector('input[name="__RequestVerificationToken"]');
             if (token) {
                 formData.append('__RequestVerificationToken', token.value);
             }
-            fetch('/Books?handler=AddToBookshelf', {
+            
+            fetch('/Books/Books?handler=AddBookToShelf', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => response.json())
             .then(data => {
@@ -388,7 +394,7 @@
                     buttonElement.innerHTML = '<i class="bi bi-check-circle me-1"></i>Added!';
                     buttonElement.classList.remove('btn-success');
                     buttonElement.classList.add('btn-outline-success');
-                    showToast('Success!', data.message);
+                    showToast('Success!', data.message, 'success');
                     setTimeout(() => {
                         buttonElement.innerHTML = originalHTML;
                         buttonElement.classList.remove('btn-outline-success');
@@ -401,14 +407,15 @@
                             window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
                         }
                     } else {
-                        showToast('Error', data.message);
+                        showToast('Error', data.message, 'error');
                     }
                     buttonElement.innerHTML = originalHTML;
                     buttonElement.disabled = false;
                 }
             })
             .catch(error => {
-                showToast('Error', 'Unable to connect to server. Please try again.');
+                console.error('Error:', error);
+                showToast('Error', 'Unable to connect to server. Please try again.', 'error');
                 buttonElement.innerHTML = originalHTML;
                 buttonElement.disabled = false;
             });
@@ -528,23 +535,6 @@
                     `;
                 });
         }
-        function showToast(title, message) {
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
-            alert.style.zIndex = '9999';
-            alert.style.marginTop = '20px';
-            alert.innerHTML = `
-                <i class="bi bi-check-circle me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(alert);
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.remove();
-                }
-            }, 5000);
-        }
     </script>
 }
         function setupBookActions() {
@@ -567,15 +557,21 @@
             const originalHTML = buttonElement.innerHTML;
             buttonElement.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Adding...';
             buttonElement.disabled = true;
+            
             const formData = new FormData();
             formData.append('bookId', bookId);
             const token = document.querySelector('input[name="__RequestVerificationToken"]');
             if (token) {
                 formData.append('__RequestVerificationToken', token.value);
             }
-            fetch('/Books?handler=AddToBookshelf', {
+            
+            fetch('/Books/Books?handler=AddBookToShelf', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => {
                 console.log('Response status:', response.status);
@@ -605,7 +601,7 @@
                         setTimeout(() => {
                             const shouldLogin = confirm('You need to sign in to add books to your bookshelf.\n\nWould you like to go to the login page now?');
                             if (shouldLogin) {
-                                window.location.href = '/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                                window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
                             } else {
                                 buttonElement.innerHTML = originalHTML;
                                 buttonElement.classList.remove('btn-outline-warning');

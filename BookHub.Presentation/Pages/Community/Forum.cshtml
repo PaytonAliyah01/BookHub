@@ -1,5 +1,5 @@
-@page "/Community/Forum"
-@model BookHub.Presentation.Pages.ForumModel
+@page
+@model BookHub.Presentation.Pages.Community.ForumModel
 @{
     ViewData["Title"] = Model.CurrentPost != null ? Model.CurrentPost.Title : $"{Model.BookClub?.Name} - Discussion Forum";
 }
@@ -9,7 +9,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/Community/BookClubs">Book Clubs</a></li>
-                    <li class="breadcrumb-item"><a href="/Community/BookClub/@Model.ClubId">@Model.BookClub?.Name</a></li>
+                    <li class="breadcrumb-item"><a href="/Community/BookClubDetails?id=@Model.ClubId">@Model.BookClub?.Name</a></li>
                     <li class="breadcrumb-item active">@(Model.CurrentPost != null ? "Discussion" : "Forum")</li>
                 </ol>
             </nav>
@@ -44,10 +44,10 @@
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <div class="avatar-circle bg-primary text-white me-2">
-                                @(Model.CurrentPost.User?.Name?.Substring(0, 1).ToUpper())
+                                @(Model.CurrentPost.User?.Username?.Substring(0, 1).ToUpper())
                             </div>
                             <div>
-                                <h6 class="mb-0">@Model.CurrentPost.User?.Name</h6>
+                                <h6 class="mb-0">@@@Model.CurrentPost.User?.Username</h6>
                                 <small class="text-muted">@Model.CurrentPost.CreatedDate.ToString("MMM dd, yyyy 'at' h:mm tt")</small>
                             </div>
                         </div>
@@ -59,8 +59,8 @@
                         }
                     </div>
                     <div class="card-body">
-                        <div class="post-content">
-                            @Html.Raw(Model.CurrentPost.Content)
+                        <div class="post-content" data-linkify="true">
+                            @Model.CurrentPost.Content
                         </div>
                     </div>
                     <div class="card-footer">
@@ -87,17 +87,17 @@
                             <div class="card-header py-2">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle bg-secondary text-white me-2 small-avatar">
-                                        @(reply.User?.Name?.Substring(0, 1).ToUpper())
+                                        @(reply.User?.Username?.Substring(0, 1).ToUpper())
                                     </div>
                                     <div>
-                                        <h6 class="mb-0 small">@reply.User?.Name</h6>
+                                        <h6 class="mb-0 small">@@@reply.User?.Username</h6>
                                         <small class="text-muted">@reply.CreatedDate.ToString("MMM dd, yyyy 'at' h:mm tt")</small>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body py-2">
-                                <div class="reply-content">
-                                    @Html.Raw(reply.Content)
+                                <div class="reply-content" data-linkify="true">
+                                    @reply.Content
                                 </div>
                             </div>
                         </div>
@@ -122,11 +122,13 @@
                                 @Html.AntiForgeryToken()
                                 <div class="mb-3">
                                     <textarea name="NewReply.Content" class="form-control" rows="4" 
-                                              placeholder="Write your reply here... You can use emojis like :smile: :heart: :thumbsup:" 
+                                              placeholder="Write your reply... Paste image URLs to embed them!" 
                                               id="replyContent" required></textarea>
+                                    <small class="text-muted d-block mt-1">
+                                        💡 Tip: Paste image/GIF URLs directly (e.g., https://example.com/image.gif)
+                                    </small>
                                 </div>
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted">Tip: Use emoji shortcodes like :smile: :heart: :fire:</small>
+                                <div class="d-flex justify-content-end">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-paper-plane me-1"></i>Post Reply
                                     </button>
@@ -175,7 +177,7 @@
                                                     @preview
                                                 </div>
                                                 <small class="text-muted">
-                                                    <i class="fas fa-user me-1"></i>@post.User?.Name
+                                                    <i class="fas fa-user me-1"></i>@@@post.User?.Username
                                                     <i class="fas fa-clock ms-2 me-1"></i>@post.CreatedDate.ToString("MMM dd, yyyy")
                                                     @if (post.ReplyCount > 0)
                                                     {
@@ -198,7 +200,7 @@
                         <div>
                             @if (Model.Page > 1)
                             {
-                                <a href="/Forum?clubId=@Model.ClubId&page=@(Model.Page - 1)" class="btn btn-outline-secondary">
+                                <a href="/Community/Forum?clubId=@Model.ClubId&page=@(Model.Page - 1)" class="btn btn-outline-secondary">
                                     <i class="fas fa-chevron-left me-1"></i>Previous
                                 </a>
                             }
@@ -207,7 +209,7 @@
                         <div>
                             @if (Model.HasMorePosts)
                             {
-                                <a href="/Forum?clubId=@Model.ClubId&page=@(Model.Page + 1)" class="btn btn-outline-secondary">
+                                <a href="/Community/Forum?clubId=@Model.ClubId&page=@(Model.Page + 1)" class="btn btn-outline-secondary">
                                     Next<i class="fas fa-chevron-right ms-1"></i>
                                 </a>
                             }
@@ -281,13 +283,13 @@
             e.preventDefault();
             const formData = new FormData(this);
             try {
-                const response = await fetch('/Forum?handler=CreatePost', {
+                const response = await fetch('/Community/Forum?handler=CreatePost', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
                 if (result.success) {
-                    window.location.href = `/Forum?clubId=@Model.ClubId&postId=${result.postId}`;
+                    window.location.href = `/Community/Forum?clubId=@Model.ClubId&postId=${result.postId}`;
                 } else {
                     alert('Error: ' + result.message);
                 }
@@ -299,7 +301,7 @@
             e.preventDefault();
             const formData = new FormData(this);
             try {
-                const response = await fetch('/Forum?handler=CreateReply', {
+                const response = await fetch('/Community/Forum?handler=CreateReply', {
                     method: 'POST',
                     body: formData
                 });
@@ -313,6 +315,52 @@
                 alert('Error posting reply. Please try again.');
             }
         });
+
+        // Enhanced URL and media detection
+        function renderMediaContent() {
+            document.querySelectorAll('[data-linkify="true"]').forEach(element => {
+                if (element.dataset.processed) return;
+                element.dataset.processed = 'true';
+                
+                let content = element.textContent;
+                
+                // Image URL regex - matches common image extensions
+                const imageRegex = /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s]*)?)/gi;
+                
+                // Video URL regex - YouTube, Vimeo, etc.
+                const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
+                
+                // General URL regex
+                const urlRegex = /(https?:\/\/[^\s]+)/gi;
+                
+                // Replace image URLs with img tags
+                content = content.replace(imageRegex, (url) => {
+                    return `<div class="embedded-image my-2"><img src="${url}" alt="Shared image" class="img-fluid rounded" style="max-width: 100%; max-height: 500px;" onerror="this.parentElement.innerHTML='<span class=text-danger>❌ Image failed to load</span>'"></div>`;
+                });
+                
+                // Replace YouTube URLs with embeds
+                content = content.replace(youtubeRegex, (match, videoId) => {
+                    return `<div class="embedded-video my-2"><iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen class="rounded"></iframe></div>`;
+                });
+                
+                // Convert remaining URLs to clickable links
+                content = content.replace(urlRegex, (url) => {
+                    // Skip if already processed as image or video
+                    if (url.match(imageRegex) || url.match(youtubeRegex)) {
+                        return url;
+                    }
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary">${url}</a>`;
+                });
+                
+                // Replace line breaks with <br>
+                content = content.replace(/\n/g, '<br>');
+                
+                element.innerHTML = content;
+            });
+        }
+        
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', renderMediaContent);
     </script>
 }
 <style>
@@ -337,6 +385,28 @@
     .post-content, .reply-content {
         line-height: 1.6;
         word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    .embedded-image {
+        text-align: center;
+    }
+    .embedded-image img {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .embedded-video {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        max-width: 100%;
+    }
+    .embedded-video iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
     }
     .post-preview {
         max-height: 3em;

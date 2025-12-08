@@ -11,7 +11,7 @@
             <i class="bi bi-exclamation-triangle me-2"></i>
             User not found.
         </div>
-        <a href="/Community/Forum" class="btn btn-primary">
+        <a href="/Community/BookClubs" class="btn btn-primary">
             <i class="bi bi-arrow-left me-2"></i>Back to Community
         </a>
     }
@@ -24,8 +24,13 @@
                         <div class="mb-3">
                             <i class="bi bi-person-circle" style="font-size: 6rem; color: #667eea;"></i>
                         </div>
-                        <h3 class="mb-1">@Model.ProfileUser.Name</h3>
-                        <p class="text-muted mb-3">@Model.ProfileUser.Email</p>
+                        <h3 class="mb-1">@@@Model.ProfileUser.Username</h3>
+                        <p class="text-muted mb-2">@Model.ProfileUser.Name</p>
+                        
+                        @if (!string.IsNullOrEmpty(Model.ProfileUser.Bio))
+                        {
+                            <p class="text-muted small mb-3">@Model.ProfileUser.Bio</p>
+                        }
                         
                         @if (Model.IsFriend)
                         {
@@ -50,6 +55,84 @@
                         }
                     </div>
                 </div>
+
+@if (!string.IsNullOrEmpty(Model.ProfileUser.Location) || 
+                     !string.IsNullOrEmpty(Model.ProfileUser.Gender) || 
+                     Model.ProfileUser.DateJoined != default(DateTime))
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-person me-2"></i>About</h6>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(Model.ProfileUser.Location))
+                            {
+                                <div class="mb-2">
+                                    <i class="bi bi-geo-alt text-muted me-2"></i>
+                                    <span>@Model.ProfileUser.Location</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ProfileUser.Gender))
+                            {
+                                <div class="mb-2">
+                                    <i class="bi bi-person-badge text-muted me-2"></i>
+                                    <span>@Model.ProfileUser.Gender</span>
+                                </div>
+                            }
+                            @if (Model.ProfileUser.DateJoined != default(DateTime))
+                            {
+                                <div class="mb-0">
+                                    <i class="bi bi-calendar-check text-muted me-2"></i>
+                                    <span>Member since @Model.ProfileUser.DateJoined.ToString("MMM yyyy")</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ProfileUser.FavoriteGenres) || 
+                     !string.IsNullOrEmpty(Model.ProfileUser.FavoriteAuthors) || 
+                     !string.IsNullOrEmpty(Model.ProfileUser.PreferredFormat))
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-heart me-2"></i>Reading Preferences</h6>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(Model.ProfileUser.FavoriteGenres))
+                            {
+                                <div class="mb-3">
+                                    <strong class="text-muted d-block mb-1">Favorite Genres</strong>
+                                    <span>@Model.ProfileUser.FavoriteGenres</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ProfileUser.FavoriteAuthors))
+                            {
+                                <div class="mb-3">
+                                    <strong class="text-muted d-block mb-1">Favorite Authors</strong>
+                                    <span>@Model.ProfileUser.FavoriteAuthors</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ProfileUser.PreferredFormat))
+                            {
+                                <div class="mb-0">
+                                    <strong class="text-muted d-block mb-1">Reading Format</strong>
+                                    <span>@Model.ProfileUser.PreferredFormat</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ProfileUser.FavoriteQuote))
+                {
+                    <div class="card shadow-sm mb-4 border-start border-primary border-4">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Favorite Quote</h6>
+                            <p class="fst-italic mb-0">"@Model.ProfileUser.FavoriteQuote"</p>
+                        </div>
+                    </div>
+                }
 
                 <div class="card shadow-sm">
                     <div class="card-header">

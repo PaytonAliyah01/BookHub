@@ -60,7 +60,7 @@ namespace BookHub.Presentation.Pages
             if (_reviewBLL.AddReview(NewReview))
             {
                 TempData["SuccessMessage"] = "Review added successfully!";
-                return RedirectToPage("/BookReviews", new { bookId = BookId });
+                return RedirectToPage("/Books/BookReviews", new { bookId = BookId });
             }
             else
             {
@@ -85,7 +85,7 @@ namespace BookHub.Presentation.Pages
             if (_reviewBLL.UpdateReview(NewReview))
             {
                 TempData["SuccessMessage"] = "Review updated successfully!";
-                return RedirectToPage("/BookReviews", new { bookId = BookId });
+                return RedirectToPage("/Books/BookReviews", new { bookId = BookId });
             }
             else
             {

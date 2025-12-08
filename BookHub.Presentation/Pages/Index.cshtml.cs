@@ -14,13 +14,20 @@ public class IndexModel : PageModel
         _userBLL = userBLL;
     }
     public ReadingGoalDto? CurrentGoal { get; set; }
-    public void OnGet()
+    public IActionResult OnGet()
     {
+        // Check if user is admin and redirect to admin dashboard
+        if (User.IsInRole("Admin"))
+        {
+            return RedirectToPage("/Admin/Dashboard");
+        }
+        
         var currentUser = GetCurrentUser();
         if (currentUser != null)
         {
             CurrentGoal = _readingGoalBLL.GetCurrentYearGoal(currentUser.UserId);
         }
+        return Page();
     }
     private UserDto? GetCurrentUser()
     {

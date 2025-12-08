@@ -61,7 +61,7 @@ namespace BookHub.Presentation.Pages.Books
             {
                 TempData["Message"] = $"Error loading book details: {ex.Message}";
                 TempData["MessageType"] = "error";
-                return RedirectToPage("/Books");
+                return RedirectToPage("/Books/Books");
             }
         }
 

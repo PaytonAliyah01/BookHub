@@ -4,7 +4,7 @@ using BookHub.BLL;
 using BookHub.DAL;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-namespace BookHub.Presentation.Pages
+namespace BookHub.Presentation.Pages.Community
 {
     public class ForumModel : PageModel
     {
@@ -38,14 +38,18 @@ namespace BookHub.Presentation.Pages
         {
             if (ClubId <= 0)
             {
-                return NotFound();
+                TempData["Message"] = "Please select a book club to view its forum.";
+                TempData["MessageType"] = "info";
+                return RedirectToPage("/Community/BookClubs");
             }
             try
             {
                 BookClub = _bookClubBLL.GetBookClubById(ClubId);
                 if (BookClub == null)
                 {
-                    return NotFound();
+                    TempData["Message"] = "Book club not found.";
+                    TempData["MessageType"] = "error";
+                    return RedirectToPage("/Community/BookClubs");
                 }
                 var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
                 if (!string.IsNullOrEmpty(userEmail))
@@ -75,7 +79,7 @@ namespace BookHub.Presentation.Pages
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Error loading forum: {ex.Message}";
-                return RedirectToPage("/BookClubs");
+                return RedirectToPage("/Community/BookClubs");
             }
         }
         public async Task<IActionResult> OnPostCreatePostAsync()

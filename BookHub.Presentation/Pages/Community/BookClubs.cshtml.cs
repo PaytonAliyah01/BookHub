@@ -94,7 +94,7 @@ namespace BookHub.Presentation.Pages
                 if (bookClubId > 0)
                 {
                     TempData["SuccessMessage"] = $"Book club '{NewBookClub.Name}' created successfully!";
-                    return RedirectToPage("/BookClub", new { id = bookClubId });
+                    return RedirectToPage("/Community/BookClubDetails", new { id = bookClubId });
                 }
                 else
                 {

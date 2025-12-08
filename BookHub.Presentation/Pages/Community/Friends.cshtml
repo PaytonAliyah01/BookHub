@@ -363,7 +363,7 @@
                 const formData = new FormData();
                 formData.append('toUserId', toUserId);
                 formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
-                const response = await fetch('/Friends?handler=SendRequest', {
+                const response = await fetch('/Community/Friends?handler=SendRequest', {
                     method: 'POST',
                     body: formData
                 });
@@ -409,7 +409,7 @@
                 const formData = new FormData();
                 formData.append('friendUserId', friendUserId);
                 formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
-                const response = await fetch('/Friends?handler=RemoveFriend', {
+                const response = await fetch('/Community/Friends?handler=RemoveFriend', {
                     method: 'POST',
                     body: formData
                 });
