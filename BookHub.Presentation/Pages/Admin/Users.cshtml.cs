@@ -6,6 +6,7 @@ using BookHub.Presentation.Filters;
 namespace BookHub.Presentation.Pages.Admin
 {
     [AdminAuthorization]
+    [IgnoreAntiforgeryToken]
     public class UsersModel : AdminBasePage
     {
         private readonly AdminBLL _adminBLL;
@@ -44,7 +45,10 @@ namespace BookHub.Presentation.Pages.Admin
             if (authCheck != null) return authCheck;
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[Users.cshtml.cs] Attempting to delete user {userId}");
                 bool success = _adminBLL.DeleteUser(userId);
+                System.Diagnostics.Debug.WriteLine($"[Users.cshtml.cs] Delete result: {success}");
+                
                 if (success)
                 {
                     TempData["Message"] = "User deleted successfully.";
@@ -52,16 +56,23 @@ namespace BookHub.Presentation.Pages.Admin
                 }
                 else
                 {
-                    TempData["Message"] = "Failed to delete user.";
+                    TempData["Message"] = "Failed to delete user - delete returned false. Check console output for details.";
                     TempData["MessageType"] = "error";
                 }
             }
             catch (Exception ex)
             {
-                TempData["Message"] = "Error deleting user: " + ex.Message;
+                System.Diagnostics.Debug.WriteLine($"[Users.cshtml.cs] Exception: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Users.cshtml.cs] InnerException: {ex.InnerException.Message}");
+                }
+                
+                var innerMessage = ex.InnerException != null ? " Inner: " + ex.InnerException.Message : "";
+                TempData["Message"] = "Error deleting user: " + ex.Message + innerMessage;
                 TempData["MessageType"] = "error";
             }
-            return RedirectToPage();
+            return RedirectToPage("/Admin/Users");
         }
         public IActionResult OnPostRestrictUser(int userId, bool isRestricted)
         {

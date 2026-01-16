@@ -223,11 +223,6 @@
                 userIdInput.name = 'userId';
                 userIdInput.value = userId;
                 form.appendChild(userIdInput);
-                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                if (tokenInput) {
-                    const tokenClone = tokenInput.cloneNode();
-                    form.appendChild(tokenClone);
-                }
                 document.body.appendChild(form);
                 form.submit();
             }

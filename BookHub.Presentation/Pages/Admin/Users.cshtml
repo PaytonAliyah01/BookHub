@@ -28,6 +28,17 @@
         </div>
     </div>
     <div class="container-fluid mt-4">
+        @if (TempData["Message"] != null)
+        {
+            var messageType = TempData["MessageType"]?.ToString() ?? "info";
+            var alertClass = messageType == "success" ? "alert-success" : "alert-danger";
+            var icon = messageType == "success" ? "check-circle" : "exclamation-triangle";
+            <div class="alert @alertClass alert-dismissible fade show" role="alert">
+                <i class="bi bi-@icon me-2"></i>
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
         @if (ViewData["ErrorMessage"] != null)
         {
             <div class="alert alert-danger" role="alert">
@@ -308,11 +319,6 @@
                 userIdInput.name = 'userId';
                 userIdInput.value = userId;
                 form.appendChild(userIdInput);
-                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                if (tokenInput) {
-                    const tokenClone = tokenInput.cloneNode();
-                    form.appendChild(tokenClone);
-                }
                 document.body.appendChild(form);
                 form.submit();
             }

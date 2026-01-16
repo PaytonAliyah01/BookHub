@@ -111,5 +111,67 @@ namespace BookHub.BLL
                 CreatedDate = bookDto.CreatedDate != default ? bookDto.CreatedDate : DateTime.Now
             };
         }
+
+        public List<BookDto> SearchBooks(string keyword)
+        {
+            try
+            {
+                var books = _bookDAL.SearchBooks(keyword);
+                return books.Select(MapToDto).ToList();
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to search books. Please try again later.", ex);
+            }
+        }
+
+        public int AddBook(string title, string author, string isbn, string coverUrl, string genre, string description)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(author))
+                    throw new ArgumentException("Title and author are required");
+
+                return _bookDAL.AddBook(title, author, isbn, genre, description, coverUrl);
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to add book. Please try again later.", ex);
+            }
+        }
+
+        public bool UpdateBook(int bookId, string title, string author, string isbn, string coverUrl, string genre, string description)
+        {
+            try
+            {
+                if (bookId <= 0)
+                    return false;
+
+                return _bookDAL.UpdateBook(bookId, title, author, isbn, genre, description, coverUrl);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to update book. Please try again later.", ex);
+            }
+        }
+
+        public bool DeleteBook(int bookId)
+        {
+            try
+            {
+                if (bookId <= 0)
+                    return false;
+
+                return _bookDAL.DeleteBook(bookId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to delete book. Please try again later.", ex);
+            }
+        }
     }
 }

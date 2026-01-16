@@ -251,7 +251,7 @@ namespace BookHub.DAL
                 if (userId <= 0)
                     return null;
                 using var conn = new SqlConnection(_connectionString);
-                var cmd = new SqlCommand("SELECT UserId, Name, Username, Email, Bio, ProfileImage, DateOfBirth, Sex, Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote, DateJoined FROM Users WHERE UserId = @UserId", conn);
+                var cmd = new SqlCommand("SELECT UserId, Name, Username, Email, Bio, ProfileImage, DateOfBirth, Sex, Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote, DateJoined, IsRestricted FROM Users WHERE UserId = @UserId", conn);
                 cmd.Parameters.AddWithValue("@UserId", userId);
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
@@ -271,7 +271,8 @@ namespace BookHub.DAL
                     FavoriteAuthors = reader["FavoriteAuthors"]?.ToString(),
                     PreferredFormat = reader["PreferredFormat"]?.ToString(),
                     FavoriteQuote = reader["FavoriteQuote"]?.ToString(),
-                    DateJoined = reader["DateJoined"] != DBNull.Value ? (DateTime)reader["DateJoined"] : DateTime.Now
+                    DateJoined = reader["DateJoined"] != DBNull.Value ? (DateTime)reader["DateJoined"] : DateTime.Now,
+                    IsRestricted = reader["IsRestricted"] != DBNull.Value && (bool)reader["IsRestricted"]
                 };
             }
             catch (SqlException ex)
@@ -281,6 +282,92 @@ namespace BookHub.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"An error occurred while retrieving user by ID: {ex.Message}", ex);
+            }
+        }
+
+        public User? ValidateUser(string email, string password)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                    return null;
+
+                var (passwordHash, salt) = GetUserPasswordData(email);
+                if (passwordHash == null || salt == null)
+                    return null;
+
+                string hashedInput = HashPassword(password, salt);
+                if (hashedInput == passwordHash)
+                {
+                    return GetUserWithCredentials(email);
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error validating user: {ex.Message}", ex);
+            }
+        }
+
+        public User? GetUserByEmail(string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return null;
+                    
+                return GetUserWithCredentials(email);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error retrieving user by email: {ex.Message}", ex);
+            }
+        }
+
+        public string HashPassword(string password, string salt)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var saltedPassword = password + salt;
+                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(saltedPassword));
+                return Convert.ToBase64String(bytes);
+            }
+        }
+
+        public bool UpdateProfile(int userId, string name, string username, string? bio, string? profileImage)
+        {
+            try
+            {
+                if (userId <= 0 || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(username))
+                    return false;
+
+                using var conn = new SqlConnection(_connectionString);
+                var cmd = new SqlCommand(@"
+                    UPDATE Users 
+                    SET Name = @Name,
+                        Username = @Username,
+                        Bio = @Bio,
+                        ProfileImage = @ProfileImage
+                    WHERE UserId = @UserId", conn);
+                
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@Name", name);
+                cmd.Parameters.AddWithValue("@Username", username);
+                cmd.Parameters.AddWithValue("@Bio", bio ?? "");
+                cmd.Parameters.AddWithValue("@ProfileImage", profileImage ?? "default.png");
+                
+                conn.Open();
+                int rowsAffected = cmd.ExecuteNonQuery();
+                return rowsAffected > 0;
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while updating profile: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while updating profile: {ex.Message}", ex);
             }
         }
     }

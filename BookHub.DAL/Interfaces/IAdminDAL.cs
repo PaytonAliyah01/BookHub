@@ -11,5 +11,8 @@ namespace BookHub.DAL.Interfaces
         List<dynamic> GetAllBookClubs();
         bool DeleteBookClub(int clubId);
         List<Book> GetUserBooks(int userId);
+        
+        // New method for admin user management
+        User? GetUserById(int userId);
     }
 }

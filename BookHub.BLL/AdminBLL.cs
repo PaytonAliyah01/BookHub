@@ -21,7 +21,7 @@ namespace BookHub.BLL
             }
             catch (Exception ex)
             {
-                throw new ApplicationException($"Error validating admin: {ex.Message}", ex);
+                throw new ApplicationException("Unable to validate admin. Please try again later.", ex);
             }
         }
         public List<Admin> GetAllAdmins()
@@ -54,7 +54,7 @@ namespace BookHub.BLL
             }
             catch (Exception ex)
             {
-                throw new ApplicationException($"Error retrieving users: {ex.Message}", ex);
+                throw new ApplicationException("Unable to retrieve users. Please try again later.", ex);
             }
         }
         public List<Book> GetAllBooks()
@@ -76,7 +76,7 @@ namespace BookHub.BLL
             }
             catch (Exception ex)
             {
-                throw new ApplicationException($"Error deleting book: {ex.Message}", ex);
+                throw new ApplicationException("Unable to delete user. Please try again later.", ex);
             }
         }
         public bool AddBook(string title, string author, string isbn, string genre, string description, string coverUrl)
@@ -113,9 +113,9 @@ namespace BookHub.BLL
                     return false;
                 return _adminDAL.DeleteUser(userId);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                throw new ApplicationException("Unable to delete user. Please try again later.", ex);
             }
         }
         public bool RestrictUser(int userId, bool isRestricted)
@@ -166,6 +166,21 @@ namespace BookHub.BLL
             catch
             {
                 return new List<Book>();
+            }
+        }
+
+        public User? GetUserById(int userId)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return null;
+
+                return _adminDAL.GetUserById(userId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to retrieve user. Please try again later.", ex);
             }
         }
     }

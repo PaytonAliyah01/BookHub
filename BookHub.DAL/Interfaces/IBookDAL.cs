@@ -9,5 +9,8 @@ namespace BookHub.DAL.Interfaces
         bool UpdateBookCover(int bookId, string coverUrl);
         bool UpdateBook(int bookId, string title, string author, string isbn, string genre, string description, string coverUrl);
         bool DeleteBook(int bookId);
+        
+        // New methods for search functionality
+        List<Book> SearchBooks(string keyword);
     }
 }

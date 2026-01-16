@@ -8,5 +8,8 @@ namespace BookHub.DAL.Interfaces
         bool UpdateBookStatus(int userId, int bookId, string newStatus, DateTime? dateStarted = null, DateTime? dateFinished = null);
         bool UpdateReadingProgress(int userId, int bookId, int? currentPage, decimal? readingProgress, int? totalPages);
         bool RemoveBookFromUserBookshelf(int userId, int bookId);
+        bool IsBookInUserBookshelf(int userId, int bookId);
+        bool UpdateOwnershipType(int userId, int bookId, string newOwnershipType);
+        bool UpdateReadingStatus(int userId, int bookId, string newStatus);
     }
 }

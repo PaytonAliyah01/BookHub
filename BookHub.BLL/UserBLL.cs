@@ -2,14 +2,24 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
 using BookHub.DAL;
+using BookHub.DAL.Interfaces;
+
 namespace BookHub.BLL
 {
     public class UserBLL : IUserBLL
     {
-        private readonly UserDAL _userDAL;
+        private readonly IUserDAL _userDAL;
+
+        // Constructor for existing code (backward compatibility)
         public UserBLL(string connectionString)
         {
             _userDAL = new UserDAL(connectionString);
+        }
+
+        // Constructor for dependency injection (mocking support)
+        public UserBLL(IUserDAL userDAL)
+        {
+            _userDAL = userDAL ?? throw new ArgumentNullException(nameof(userDAL));
         }
         public bool UserExists(string email)
         {
@@ -29,23 +39,27 @@ namespace BookHub.BLL
             try
             {
                 if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-                    return false;
+                    throw new ArgumentException("Name, username, email, and password cannot be null or empty.");
                 if (password.Length < 6) 
-                    return false;
+                    throw new ArgumentException("Password must be at least 6 characters long.");
                 if (_userDAL.UserExists(email))
-                    return false;
+                    throw new InvalidOperationException("User with this email already exists.");
                 string salt = GenerateSalt();
                 string hashedPassword = HashPassword(password, salt);
                 _userDAL.RegisterUser(name, username, email, hashedPassword, salt, dateOfBirth, sex);
                 return true;
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                throw new ApplicationException("Unable to register user. Please try again later.", ex);
+                throw; // Re-throw validation exceptions directly
             }
             catch (ArgumentException)
             {
-                return false; 
+                throw; // Re-throw argument exceptions directly
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Unable to register user. Please try again later.", ex);
             }
         }
         public UserDto? ValidateUser(string email, string password)
@@ -65,7 +79,7 @@ namespace BookHub.BLL
             }
             catch (InvalidOperationException ex)
             {
-                throw new ApplicationException("Unable to validate user credentials. Please try again later.", ex);
+                throw new ApplicationException("Unable to validate user. Please try again later.", ex);
             }
         }
         private string GenerateSalt()
@@ -266,6 +280,37 @@ namespace BookHub.BLL
                 Bio = userDto.Bio,
                 ProfileImage = userDto.ProfileImage
             };
+        }
+
+        public UserDto? GetUserByEmail(string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return null;
+
+                var user = _userDAL.GetUserByEmail(email);
+                return user != null ? MapToDto(user) : null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to retrieve user. Please try again later.", ex);
+            }
+        }
+
+        public bool UpdateProfile(int userId, string name, string username, string? bio, string? profileImage)
+        {
+            try
+            {
+                if (userId <= 0 || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(username))
+                    return false;
+
+                return _userDAL.UpdateProfile(userId, name, username, bio, profileImage);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ApplicationException("Unable to update profile. Please try again later.", ex);
+            }
         }
     }
 }

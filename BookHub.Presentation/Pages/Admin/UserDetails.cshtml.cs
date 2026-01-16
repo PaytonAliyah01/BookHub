@@ -6,6 +6,7 @@ using BookHub.Presentation.Filters;
 namespace BookHub.Presentation.Pages.Admin
 {
     [AdminAuthorization]
+    [IgnoreAntiforgeryToken]
     public class UserDetailsModel : AdminBasePage
     {
         private readonly AdminBLL _adminBLL;
@@ -77,7 +78,9 @@ namespace BookHub.Presentation.Pages.Admin
             if (authCheck != null) return authCheck;
             try
             {
+                System.Diagnostics.Debug.WriteLine($"Attempting to delete user {userId}");
                 bool success = _adminBLL.DeleteUser(userId);
+                System.Diagnostics.Debug.WriteLine($"Delete result: {success}");
                 if (success)
                 {
                     TempData["Message"] = "User deleted successfully!";
@@ -86,13 +89,19 @@ namespace BookHub.Presentation.Pages.Admin
                 }
                 else
                 {
-                    TempData["Message"] = "Failed to delete user.";
+                    TempData["Message"] = "Failed to delete user - delete returned false.";
                     TempData["MessageType"] = "error";
                 }
             }
             catch (Exception ex)
             {
-                TempData["Message"] = $"Error deleting user: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"Exception during delete: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                var innerMessage = ex.InnerException != null ? " Details: " + ex.InnerException.Message : "";
+                TempData["Message"] = "Error deleting user: " + ex.Message + innerMessage;
                 TempData["MessageType"] = "error";
             }
             return RedirectToPage(new { userId = UserId });

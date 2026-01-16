@@ -168,42 +168,92 @@ namespace BookHub.DAL
                 using (SqlConnection conn = new SqlConnection(_connectionString))
                 {
                     conn.Open();
+                    
+                    // First check if user exists
+                    using (SqlCommand checkCmd = new SqlCommand("SELECT COUNT(*) FROM Users WHERE UserId = @UserId", conn))
+                    {
+                        checkCmd.Parameters.AddWithValue("@UserId", userId);
+                        int userExists = (int)checkCmd.ExecuteScalar();
+                        if (userExists == 0)
+                        {
+                            throw new InvalidOperationException($"User with ID {userId} does not exist.");
+                        }
+                    }
+                    
                     using (var transaction = conn.BeginTransaction())
                     {
                         try
                         {
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM UserBooks WHERE UserId = @UserId", conn, transaction))
+                            // Helper method to execute delete if table exists
+                            void SafeDelete(string query, string tableName)
                             {
-                                cmd.Parameters.AddWithValue("@UserId", userId);
-                                cmd.ExecuteNonQuery();
-                            }
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM ReadingGoals WHERE UserId = @UserId", conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@UserId", userId);
-                                cmd.ExecuteNonQuery();
-                            }
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM BookReviews WHERE UserId = @UserId", conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@UserId", userId);
-                                cmd.ExecuteNonQuery();
-                            }
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Users WHERE UserId = @UserId", conn, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@UserId", userId);
-                                int result = cmd.ExecuteNonQuery();
-                                if (result > 0)
+                                try
                                 {
-                                    transaction.Commit();
-                                    return true;
+                                    using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+                                    {
+                                        cmd.Parameters.AddWithValue("@UserId", userId);
+                                        int deleted = cmd.ExecuteNonQuery();
+                                        System.Diagnostics.Debug.WriteLine($"Deleted {deleted} rows from {tableName}");
+                                    }
+                                }
+                                catch (SqlException sqlEx)
+                                {
+                                    // Only ignore "Invalid object name" errors (table doesn't exist)
+                                    if (sqlEx.Message.Contains("Invalid object name"))
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"Table {tableName} does not exist, skipping.");
+                                    }
+                                    else
+                                    {
+                                        throw new InvalidOperationException($"Error deleting from {tableName}: {sqlEx.Message}", sqlEx);
+                                    }
                                 }
                             }
-                            transaction.Rollback();
-                            return false;
+                            
+                            // Delete from all related tables in correct order
+                            SafeDelete("DELETE FROM Friends WHERE UserId = @UserId OR FriendUserId = @UserId", "Friends");
+                            SafeDelete("DELETE FROM FriendRequests WHERE FromUserId = @UserId OR ToUserId = @UserId", "FriendRequests");
+                            SafeDelete("DELETE FROM BookClubMembers WHERE UserId = @UserId", "BookClubMembers");
+                            SafeDelete("DELETE FROM ClubMemberships WHERE UserId = @UserId", "ClubMemberships");
+                            SafeDelete("DELETE FROM DiscussionReplies WHERE UserId = @UserId", "DiscussionReplies");
+                            SafeDelete("DELETE FROM DiscussionPosts WHERE UserId = @UserId", "DiscussionPosts");
+                            SafeDelete("DELETE FROM BookClubs WHERE OwnerId = @UserId", "BookClubs");
+                            SafeDelete("DELETE FROM UserBooks WHERE UserId = @UserId", "UserBooks");
+                            SafeDelete("DELETE FROM ReadingGoals WHERE UserId = @UserId", "ReadingGoals");
+                            SafeDelete("DELETE FROM BookReviews WHERE UserId = @UserId", "BookReviews");
+                            
+                            // Finally delete the user
+                            try
+                            {
+                                using (SqlCommand cmd = new SqlCommand("DELETE FROM Users WHERE UserId = @UserId", conn, transaction))
+                                {
+                                    cmd.Parameters.AddWithValue("@UserId", userId);
+                                    int result = cmd.ExecuteNonQuery();
+                                    System.Diagnostics.Debug.WriteLine($"Final delete from Users affected {result} rows");
+                                    if (result > 0)
+                                    {
+                                        transaction.Commit();
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        transaction.Rollback();
+                                        throw new InvalidOperationException($"User {userId} could not be deleted. DELETE affected 0 rows.");
+                                    }
+                                }
+                            }
+                            catch (SqlException sqlEx)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"SQL ERROR deleting from Users: {sqlEx.Message}");
+                                System.Diagnostics.Debug.WriteLine($"SQL Error Number: {sqlEx.Number}");
+                                transaction.Rollback();
+                                throw new InvalidOperationException($"SQL error deleting user: {sqlEx.Message} (Error {sqlEx.Number})", sqlEx);
+                            }
                         }
-                        catch
+                        catch (Exception ex)
                         {
                             transaction.Rollback();
-                            throw;
+                            throw new InvalidOperationException($"Transaction error: {ex.Message}", ex);
                         }
                     }
                 }
@@ -410,6 +460,60 @@ namespace BookHub.DAL
             }
             catch
             {
+            }
+        }
+
+        public User? GetUserById(int userId)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return null;
+
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    string query = @"SELECT UserId, Name, Username, Email, Bio, ProfileImage, DateOfBirth, Sex, 
+                                    Location, FavoriteGenres, FavoriteAuthors, PreferredFormat, FavoriteQuote, 
+                                    DateJoined, IsRestricted 
+                                    FROM Users WHERE UserId = @UserId";
+                    
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+                        conn.Open();
+                        
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return new User
+                                {
+                                    UserId = (int)reader["UserId"],
+                                    Name = reader["Name"]?.ToString() ?? "",
+                                    Username = reader["Username"]?.ToString() ?? "",
+                                    Email = reader["Email"]?.ToString() ?? "",
+                                    Bio = reader["Bio"]?.ToString() ?? "",
+                                    ProfileImage = reader["ProfileImage"]?.ToString() ?? "default.png",
+                                    DateOfBirth = reader["DateOfBirth"] as DateTime?,
+                                    Gender = reader["Sex"]?.ToString(),
+                                    Location = reader["Location"]?.ToString(),
+                                    FavoriteGenres = reader["FavoriteGenres"]?.ToString(),
+                                    FavoriteAuthors = reader["FavoriteAuthors"]?.ToString(),
+                                    PreferredFormat = reader["PreferredFormat"]?.ToString(),
+                                    FavoriteQuote = reader["FavoriteQuote"]?.ToString(),
+                                    DateJoined = reader["DateJoined"] != DBNull.Value ? (DateTime)reader["DateJoined"] : DateTime.Now,
+                                    IsRestricted = reader["IsRestricted"] != DBNull.Value && (bool)reader["IsRestricted"]
+                                };
+                            }
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error retrieving user by ID: {ex.Message}", ex);
             }
         }
     }

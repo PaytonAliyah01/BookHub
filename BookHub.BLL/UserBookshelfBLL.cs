@@ -1,15 +1,26 @@
 using BookHub.DAL;
+using BookHub.DAL.Interfaces;
+
 namespace BookHub.BLL
 {
     public class UserBookshelfBLL : IUserBookshelfBLL
     {
-        private readonly UserBookshelfDAL _userBookshelfDAL;
-        private readonly BookDAL _bookDAL;
+        private readonly IUserBookshelfDAL _userBookshelfDAL;
+        private readonly IBookDAL _bookDAL;
+
         public UserBookshelfBLL(string connectionString)
         {
             _userBookshelfDAL = new UserBookshelfDAL(connectionString);
             _bookDAL = new BookDAL(connectionString);
         }
+
+        // Constructor for dependency injection (mocking support)
+        public UserBookshelfBLL(IUserBookshelfDAL userBookshelfDAL, IBookDAL bookDAL)
+        {
+            _userBookshelfDAL = userBookshelfDAL ?? throw new ArgumentNullException(nameof(userBookshelfDAL));
+            _bookDAL = bookDAL ?? throw new ArgumentNullException(nameof(bookDAL));
+        }
+
         public bool AddBookToUserBookshelf(int userId, int bookId, string status = "Want to Read", string ownershipType = "Physical")
         {
             try
@@ -142,7 +153,7 @@ namespace BookHub.BLL
                     throw new ArgumentException("Invalid status");
                 if (rating.HasValue && (rating.Value < 1 || rating.Value > 5))
                     throw new ArgumentException("Rating must be between 1 and 5");
-                return _userBookshelfDAL.UpdateBookStatus(userId, bookId, status, rating, notes);
+                return _userBookshelfDAL.UpdateBookStatus(userId, bookId, status, null, null);
             }
             catch (ArgumentException)
             {
@@ -251,6 +262,29 @@ namespace BookHub.BLL
             catch (Exception ex)
             {
                 throw new ApplicationException($"Error updating reading progress: {ex.Message}", ex);
+            }
+        }
+
+        public bool UpdateReadingStatus(int userId, int bookId, string newStatus)
+        {
+            try
+            {
+                if (userId <= 0)
+                    throw new ArgumentException("Invalid user ID");
+                if (bookId <= 0)
+                    throw new ArgumentException("Invalid book ID");
+                if (string.IsNullOrWhiteSpace(newStatus))
+                    throw new ArgumentException("Status cannot be empty");
+
+                return _userBookshelfDAL.UpdateReadingStatus(userId, bookId, newStatus);
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException($"Error updating reading status: {ex.Message}", ex);
             }
         }
     }

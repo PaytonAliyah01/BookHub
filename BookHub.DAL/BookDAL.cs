@@ -273,5 +273,57 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"An error occurred while updating book: {ex.Message}", ex);
             }
         }
+
+        public List<Book> SearchBooks(string keyword)
+        {
+            try
+            {
+                var books = new List<Book>();
+                
+                if (string.IsNullOrWhiteSpace(keyword))
+                    return GetAllBooks();
+
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    SqlCommand cmd = new SqlCommand(@"
+                        SELECT BookId, Title, Author, ISBN, CoverUrl, Genre, Description 
+                        FROM Books 
+                        WHERE Title LIKE @Keyword 
+                           OR Author LIKE @Keyword 
+                           OR Genre LIKE @Keyword 
+                           OR Description LIKE @Keyword
+                           OR ISBN LIKE @Keyword", conn);
+                    
+                    cmd.Parameters.AddWithValue("@Keyword", $"%{keyword}%");
+                    
+                    conn.Open();
+                    using var reader = cmd.ExecuteReader();
+                    
+                    while (reader.Read())
+                    {
+                        books.Add(new Book
+                        {
+                            BookId = (int)reader["BookId"],
+                            Title = reader["Title"]?.ToString() ?? "",
+                            Author = reader["Author"]?.ToString() ?? "",
+                            ISBN = reader["ISBN"]?.ToString() ?? "",
+                            CoverUrl = reader["CoverUrl"]?.ToString() ?? "",
+                            Genre = reader["Genre"]?.ToString() ?? "",
+                            Description = reader["Description"]?.ToString() ?? ""
+                        });
+                    }
+                }
+                
+                return books;
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Database error occurred while searching books: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"An error occurred while searching books: {ex.Message}", ex);
+            }
+        }
     }
 }

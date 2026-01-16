@@ -412,6 +412,30 @@ namespace BookHub.DAL
                 throw new InvalidOperationException($"Error updating reading progress: {ex.Message}", ex);
             }
         }
+
+        public bool UpdateReadingStatus(int userId, int bookId, string newStatus)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    string query = "UPDATE UserBooks SET Status = @Status WHERE UserId = @UserId AND BookId = @BookId";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Status", newStatus);
+                        cmd.Parameters.AddWithValue("@UserId", userId);
+                        cmd.Parameters.AddWithValue("@BookId", bookId);
+                        return cmd.ExecuteNonQuery() > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error updating reading status: {ex.Message}", ex);
+            }
+        }
+
         private bool CheckNewColumnsExist(SqlConnection conn)
         {
             try
